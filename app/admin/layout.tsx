@@ -208,7 +208,7 @@ export default function AdminLayout({
               <h1 className="text-2xl font-bold">Panel de Administración</h1>
               <p className="text-sm text-gray-400 flex items-center gap-2">
                 Gestiona usuarios, laboratorios y contenido
-                <span className="ml-2 text-xs text-gray-500">
+                <span className="ml-2 text-xs text-gray-500" suppressHydrationWarning>
                   • Actualizado {lastUpdate.toLocaleTimeString()}
                 </span>
               </p>

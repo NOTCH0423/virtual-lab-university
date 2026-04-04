@@ -331,7 +331,7 @@ export default function AdminUsersPage() {
           <h1 className="text-2xl font-bold">Gestión de Usuarios</h1>
           <p className="text-gray-400 text-sm flex items-center gap-2">
             Control total sobre los usuarios del sistema
-            <span className="ml-2 text-xs text-gray-500">
+            <span className="ml-2 text-xs text-gray-500" suppressHydrationWarning>
               • Actualizado {lastUpdate.toLocaleTimeString()}
             </span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
