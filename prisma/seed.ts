@@ -342,12 +342,12 @@ async function main() {
   const opticsLab = laboratories[6];
 
   const experiments = await Promise.all([
-    // Mecánica
+    // Mecánica Clásica
     prisma.experiment.create({
       data: {
         laboratoryId: mechanicsLab.id,
         title: 'Péndulo Simple',
-        slug: 'pendulo-simple',
+        slug: 'pendulum',
         description: 'Estudia el movimiento armónico simple de un péndulo y determina g.',
         category: 'FISICA',
         difficulty: 'BASICO',
@@ -363,7 +363,7 @@ async function main() {
       data: {
         laboratoryId: mechanicsLab.id,
         title: 'Movimiento Parabólico',
-        slug: 'movimiento-parabolico',
+        slug: 'projectile-motion',
         description: 'Analiza el movimiento de proyectiles bajo gravedad.',
         category: 'FISICA',
         difficulty: 'INTERMEDIO',
@@ -375,17 +375,124 @@ async function main() {
         image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31',
       },
     }),
+
+    // Química General
+    prisma.experiment.create({
+      data: {
+        laboratoryId: chemistryLab.id,
+        title: 'Laboratorio Virtual de Química',
+        slug: 'chemistry-lab',
+        description: 'Experimenta con reacciones químicas de forma segura en un laboratorio virtual completo.',
+        category: 'QUIMICA',
+        difficulty: 'BASICO',
+        duration: 60,
+        order: 1,
+        theory: 'Las reacciones químicas transforman sustancias. Los reactivos se combinan para formar productos con nuevas propiedades.',
+        formulas: 'HA + BOH → BA + H₂O',
+        instructions: '1. Selecciona reactivos del panel izquierdo\n2. Agrégalos a los recipientes\n3. Mezcla y observa las reacciones\n4. Analiza los resultados',
+        image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69',
+      },
+    }),
+    prisma.experiment.create({
+      data: {
+        laboratoryId: chemistryLab.id,
+        title: 'Titulación Ácido-Base',
+        slug: 'titration',
+        description: 'Realiza una titulación para determinar la concentración de una solución desconocida.',
+        category: 'QUIMICA',
+        difficulty: 'INTERMEDIO',
+        duration: 40,
+        order: 2,
+        theory: 'La titulación es un método analítico para determinar la concentración de un analito mediante la reacción con una solución de concentración conocida.',
+        formulas: 'C₁V₁ = C₂V₂',
+        instructions: '1. Prepara la bureta con la solución estándar\n2. Agrega el indicador\n3. Titula gota a gota hasta el punto de equivalencia\n4. Calcula la concentración',
+        image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69',
+      },
+    }),
+
+    // Biología Celular
+    prisma.experiment.create({
+      data: {
+        laboratoryId: biologyLab.id,
+        title: 'Mitosis y Meiosis',
+        slug: 'mitosis',
+        description: 'Observa y compara los procesos de división celular mitótica y meiótica.',
+        category: 'BIOLOGIA',
+        difficulty: 'INTERMEDIO',
+        duration: 50,
+        order: 1,
+        theory: 'Mitosis: división celular que produce dos células hijas idénticas. Meiosis: produce cuatro células hijas con la mitad de cromosomas.',
+        instructions: '1. Selecciona el tipo de división celular\n2. Observa cada fase\n3. Identifica los cambios en los cromosomas\n4. Compara los resultados',
+        image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557',
+      },
+    }),
+
+    // Termodinámica
+    prisma.experiment.create({
+      data: {
+        laboratoryId: thermoLab.id,
+        title: 'Simulación de Gases Ideales',
+        slug: 'gas-simulation',
+        description: 'Simula el comportamiento de gases ideales y verifica la ecuación de estado PV = nRT.',
+        category: 'FISICA',
+        difficulty: 'AVANZADO',
+        duration: 55,
+        order: 1,
+        theory: 'La ley de los gases ideales relaciona presión, volumen, temperatura y cantidad de sustancia. PV = nRT describe el comportamiento de un gas ideal.',
+        formulas: 'PV = nRT',
+        instructions: '1. Configura las condiciones iniciales del gas\n2. Varía la temperatura, presión o volumen\n3. Observa cómo cambian las propiedades\n4. Verifica la ecuación de estado',
+        image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31',
+      },
+    }),
+
+    // Análisis de Circuitos
+    prisma.experiment.create({
+      data: {
+        laboratoryId: circuitsLab.id,
+        title: 'Análisis de Circuitos Eléctricos',
+        slug: 'circuit-analysis',
+        description: 'Construye y analiza circuitos eléctricos con resistencias, capacitores e inductores.',
+        category: 'INGENIERIA',
+        difficulty: 'AVANZADO',
+        duration: 60,
+        order: 1,
+        theory: 'Las leyes de Kirchhoff y Ohm son fundamentales para el análisis de circuitos eléctricos. V = IR, ΣV = 0, ΣI = 0.',
+        formulas: 'V = IR, P = IV',
+        instructions: '1. Selecciona los componentes del circuito\n2. Conecta los elementos\n3. Mide voltajes y corrientes\n4. Verifica las leyes de Kirchhoff',
+        image: 'https://images.unsplash.com/photo-1518770660439-4636190af475',
+      },
+    }),
+
+    // Estructura Atómica (nuevo laboratorio)
+    prisma.experiment.create({
+      data: {
+        laboratoryId: opticsLab.id,
+        title: 'Estructura Atómica',
+        slug: 'atomic-structure',
+        description: 'Explora la estructura del átomo, niveles de energía y configuración electrónica.',
+        category: 'FISICA',
+        difficulty: 'INTERMEDIO',
+        duration: 45,
+        order: 2,
+        theory: 'El átomo está compuesto por protones, neutrones y electrones. Los electrones ocupan niveles de energía cuantizados alrededor del núcleo.',
+        formulas: 'E = -13.6 eV / n²',
+        instructions: '1. Selecciona un elemento\n2. Observa la distribución electrónica\n3. Excita los electrones\n4. Analiza las transiciones de energía',
+        image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb',
+      },
+    }),
+
+    // Más experimentos para Mecánica
     prisma.experiment.create({
       data: {
         laboratoryId: mechanicsLab.id,
         title: 'Leyes de Newton',
-        slug: 'leyes-newton',
+        slug: 'newtons-laws',
         description: 'Aplica las tres leyes de Newton a diferentes escenarios.',
         category: 'FISICA',
         difficulty: 'INTERMEDIO',
         duration: 50,
         order: 3,
-        theory: '1ª Ley: Inercia\n2ª Ley: F = ma\n3ª Ley: Acción-Reacción',
+        theory: '1ª Ley: Inercia - Un cuerpo en reposo permanece en reposo.\n2ª Ley: F = ma - La fuerza equals masa times aceleración.\n3ª Ley: Acción-Reacción - Para cada acción hay una reacción igual y opuesta.',
         formulas: 'F = ma',
         instructions: '1. Observa cada ley en acción\n2. Realiza mediciones\n3. Grafica resultados',
         image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb',
@@ -395,33 +502,33 @@ async function main() {
       data: {
         laboratoryId: mechanicsLab.id,
         title: 'Conservación de Energía',
-        slug: 'conservacion-energia',
+        slug: 'energy-conservation',
         description: 'Estudia la transformación entre energía cinética y potencial.',
         category: 'FISICA',
         difficulty: 'INTERMEDIO',
         duration: 40,
         order: 4,
-        theory: 'La energía no se crea ni se destruye, solo se transforma.',
+        theory: 'La energía no se crea ni se destruye, solo se transforma de una forma a otra.',
         formulas: 'E = ½mv² + mgh = constante',
         instructions: '1. Suelta la bola desde diferentes alturas\n2. Mide velocidades\n3. Calcula energías',
         image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb',
       },
     }),
 
-    // Química
+    // Más experimentos para Química
     prisma.experiment.create({
       data: {
         laboratoryId: chemistryLab.id,
-        title: 'Reacciones Ácido-Base',
-        slug: 'reacciones-acido-base',
-        description: 'Estudia neutralización y determinación de pH.',
+        title: 'Reacciones de Oxidación-Reducción',
+        slug: 'redox-reactions',
+        description: 'Estudia reacciones de oxidación y reducción en métaux.',
         category: 'QUIMICA',
-        difficulty: 'BASICO',
-        duration: 35,
-        order: 1,
-        theory: 'Las reacciones ácido-base producen sal y agua. El pH indica la acidez o basicidad.',
-        formulas: 'HA + BOH → BA + H₂O',
-        instructions: '1. Prepara soluciones\n2. Mide pH inicial\n3. Mezcla y observa reacción\n4. Mide pH final',
+        difficulty: 'INTERMEDIO',
+        duration: 45,
+        order: 3,
+        theory: 'Las reacciones redox implican transferencia de electrones. Oxidación es pérdida de electrones, reducción es ganancia.',
+        formulas: 'Red → Ox + e⁻',
+        instructions: '1. Prepara soluciones oxidantes\n2. Observa cambios de color\n3. Identifica electrones transferidos',
         image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69',
       },
     }),
@@ -429,12 +536,12 @@ async function main() {
       data: {
         laboratoryId: chemistryLab.id,
         title: 'Estequiometría',
-        slug: 'estequiometria',
+        slug: 'stoichiometry',
         description: 'Cálculos de reacciones químicas y rendimiento.',
         category: 'QUIMICA',
         difficulty: 'INTERMEDIO',
         duration: 45,
-        order: 2,
+        order: 4,
         theory: 'La estequiometría estudia las relaciones cuantitativas en reacciones químicas.',
         formulas: 'n = m/M',
         instructions: '1. Calcula moles de reactivos\n2. Determina reactivo limitante\n3. Calcula productos esperados',
@@ -442,17 +549,17 @@ async function main() {
       },
     }),
 
-    // Biología
+    // Más experimentos para Biología
     prisma.experiment.create({
       data: {
         laboratoryId: biologyLab.id,
         title: 'Observación Celular',
-        slug: 'observacion-celular',
+        slug: 'cell-observation',
         description: 'Identifica estructuras celulares en diferentes tipos de células.',
         category: 'BIOLOGIA',
         difficulty: 'BASICO',
         duration: 40,
-        order: 1,
+        order: 2,
         theory: 'Las células son la unidad básica de la vida. Pueden ser procariotas o eucariotas.',
         instructions: '1. Selecciona tipo de célula\n2. Identifica organelos\n3. Anota funciones',
         image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557',
@@ -461,87 +568,52 @@ async function main() {
     prisma.experiment.create({
       data: {
         laboratoryId: biologyLab.id,
-        title: 'Mitosis y Meiosis',
-        slug: 'mitosis-meiosis',
-        description: 'Compara los procesos de división celular.',
+        title: 'Herencia Mendeliana',
+        slug: 'mendelian-inheritance',
+        description: 'Predice resultados de cruzamientos monohíbridos y dihíbridos.',
         category: 'BIOLOGIA',
-        difficulty: 'INTERMEDIO',
+        difficulty: 'AVANZADO',
         duration: 50,
-        order: 2,
-        theory: 'Mitosis: división celular asexual. Meiosis: división celular sexual.',
-        instructions: '1. Identifica fases\n2. Compara procesos\n3. Responde preguntas',
+        order: 3,
+        theory: 'Las leyes de Mendel explican la herencia de traits.',
+        formulas: 'Genotipo: AA, Aa, aa',
+        instructions: '1. Selecciona parentales\n2. Realiza cruzamiento\n3. Calcula proporciones',
         image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557',
       },
     }),
 
-    // Termodinámica
+    // Más experimentos para Termodinámica
     prisma.experiment.create({
       data: {
         laboratoryId: thermoLab.id,
         title: 'Leyes de la Termodinámica',
-        slug: 'leyes-termodinamica',
+        slug: 'thermodynamics-laws',
         description: 'Aplica las leyes de la termodinámica a sistemas cerrados.',
         category: 'FISICA',
         difficulty: 'AVANZADO',
         duration: 55,
-        order: 1,
+        order: 2,
         theory: '0ª Ley: Equilibrio térmico\n1ª Ley: Conservación de energía\n2ª Ley: Entropía\n3ª Ley: Cero absoluto',
         instructions: '1. Analiza cada ley\n2. Realiza cálculos\n3. Interpreta resultados',
         image: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31',
       },
     }),
 
-    // Circuitos
+    // Más experimentos para Circuitos
     prisma.experiment.create({
       data: {
         laboratoryId: circuitsLab.id,
-        title: 'Leyes de Kirchhoff',
-        slug: 'leyes-kirchhoff',
-        description: 'Aplica las leyes de voltaje y corriente en circuitos.',
+        title: 'Circuitos RC y RL',
+        slug: 'rc-rl-circuits',
+        description: 'Analiza circuitos con resistores y capacitores o inductores.',
         category: 'INGENIERIA',
         difficulty: 'AVANZADO',
         duration: 60,
-        order: 1,
-        theory: 'LKV: La suma de voltajes en una malla es cero\nLKC: La suma de corrientes en un nodo es cero',
-        formulas: 'ΣV = 0, ΣI = 0',
-        instructions: '1. Arma el circuito\n2. Mide voltajes y corrientes\n3. Verifica las leyes',
+        order: 2,
+        theory: 'Los circuitos RC y RL tienen comportamiento transitorio dependent del tiempo.',
+        formulas: 'V(t) = V₀(1 - e^(-t/RC))',
+        instructions: '1. Arma el circuito\n2. Observa la respuesta transitoria\n3. Mide constantes de tiempo',
         image: 'https://images.unsplash.com/photo-1518770660439-4636190af475',
-      },
-    }),
-
-    // Genética
-    prisma.experiment.create({
-      data: {
-        laboratoryId: geneticsLab.id,
-        title: 'Herencia Mendeliana',
-        slug: 'herencia-mendeliana',
-        description: 'Predice resultados de cruzamientos monohíbridos y dihíbridos.',
-        category: 'BIOLOGIA',
-        difficulty: 'AVANZADO',
-        duration: 50,
-        order: 1,
-        theory: 'Las leyes de Mendel explican la herencia de traits.',
-        formulas: 'Genotipo: AA, Aa, aa\nFenotipo: Dominante o Recesivo',
-        instructions: '1. Selecciona parentales\n2. Realiza cruzamiento\n3. Calcula proporciones',
-        image: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8',
-      },
-    }),
-
-    // Óptica
-    prisma.experiment.create({
-      data: {
-        laboratoryId: opticsLab.id,
-        title: 'Lentes y Espejos',
-        slug: 'lentes-espejos',
-        description: 'Estudia formación de imágenes con lentes y espejos.',
-        category: 'FISICA',
-        difficulty: 'INTERMEDIO',
-        duration: 45,
-        order: 1,
-        theory: 'Los lentes y espejos refractan o reflejan la luz para formar imágenes.',
-        formulas: '1/f = 1/do + 1/di',
-        instructions: '1. Coloca el objeto\n2. Ajusta posición del lente/espejo\n3. Observa y mide',
-        image: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6',
       },
     }),
   ]);
