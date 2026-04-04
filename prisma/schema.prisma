@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  firstName     String?
+  lastName      String?
+  role          String    @default("STUDENT")
+  university    String?
+  career        String?
+  avatar        String?
+  bio           String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastActiveAt  DateTime?
+  status        String   @default("ACTIVE")
+  
+  progress      UserProgress[]
+  achievements  UserAchievement[]
+  sessions      Session[]
+  certificates  Certificate[]
+  
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  @@map("sessions")
+}
+
+model Laboratory {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  category    String
+  image       String?
+  difficulty  String   @default("BASIC")
+  status      String   @default("DRAFT")
+  instructor  String?
+  requirements String?
+  duration    Int?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  experiments Experiment[]
+  progress    UserProgress[]
+  
+  @@map("laboratories")
+}
+
+model Experiment {
+  id           String   @id @default(cuid())
+  laboratoryId String
+  laboratory   Laboratory @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
+  title        String
+  slug        String
+  description String
+  category    String
+  image       String?
+  difficulty  String   @default("BASIC")
+  duration    Int?
+  order       Int      @default(0)
+  instructions String?
+  formulas     String?
+  theory       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  progress     ExperimentProgress[]
+  results      ExperimentResult[]
+  
+  @@unique([laboratoryId, slug])
+  @@map("experiments")
+}
+
+model UserProgress {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  laboratoryId String
+  laboratory   Laboratory @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
+  
+  completed    Boolean   @default(false)
+  progress     Int       @default(0)
+  score        Int?
+  timeSpent    Int       @default(0)
+  attempts     Int       @default(0)
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  
+  experimentProgress ExperimentProgress[]
+  
+  @@unique([userId, laboratoryId])
+  @@map("user_progress")
+}
+
+model ExperimentProgress {
+  id           String    @id @default(cuid())
+  userProgressId String
+  userProgress   UserProgress @relation(fields: [userProgressId], references: [id], onDelete: Cascade)
+  experimentId   String
+  experiment     Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  
+  completed    Boolean   @default(false)
+  score        Int?
+  timeSpent    Int       @default(0)
+  attempts     Int       @default(0)
+  data         String?
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+  
+  results      ExperimentResult[]
+  
+  @@unique([userProgressId, experimentId])
+  @@map("experiment_progress")
+}
+
+model ExperimentResult {
+  id           String   @id @default(cuid())
+  experimentProgressId String
+  experimentProgress   ExperimentProgress @relation(fields: [experimentProgressId], references: [id], onDelete: Cascade)
+  experimentId String
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  
+  score        Int
+  data         String
+  parameters   String?
+  accuracy     Float?
+  createdAt    DateTime @default(now())
+  
+  @@map("experiment_results")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  icon        String?
+  color       String?
+  category    String?
+  requirement String?
+  points      Int      @default(0)
+  createdAt   DateTime @default(now())
+  
+  users       UserAchievement[]
+  
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  earnedAt      DateTime @default(now())
+  
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model Certificate {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  laboratoryId String
+  title        String
+  description  String?
+  score        Int
+  issuedAt     DateTime @default(now())
+  
+  @@map("certificates")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String
+  category    String
+  image       String?
+  level       String   @default("BASIC")
+  duration    Int?
+  modules     Int      @default(0)
+  status      String   @default("DRAFT")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("courses")
+}
+
+model DailyStats {
+  id           String   @id @default(cuid())
+  date         DateTime @unique
+  activeUsers  Int      @default(0)
+  newUsers     Int      @default(0)
+  experimentsCompleted Int @default(0)
+  totalHours   Float    @default(0)
+  certificatesIssued Int @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@map("daily_stats")
+}
+
+model SystemStats {
+  id            String   @id @default(cuid())
+  totalUsers    Int      @default(0)
+  activeUsers   Int      @default(0)
+  totalExperiments Int   @default(0)
+  experimentsCompleted Int @default(0)
+  totalHours    Float    @default(0)
+  certificates  Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  
+  @@map("system_stats")
+}
