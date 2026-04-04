@@ -345,10 +345,61 @@ export default function AdminSettingsPage() {
                   <p className="text-2xl font-bold">{dbStats?.sessions?.toLocaleString() || '...'}</p>
                 </div>
               </div>
-              <button className="w-full py-3 bg-yellow-500/20 text-yellow-400 rounded-xl font-medium hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2">
-                <RefreshCw className="w-5 h-5" />
-                Respaldar Base de Datos
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/admin/database', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'export' }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        alert('Base de datos exportada correctamente');
+                      }
+                    } catch (error) {
+                      console.error('Export error:', error);
+                      alert('Error al exportar');
+                    }
+                  }}
+                  className="flex-1 py-3 bg-yellow-500/20 text-yellow-400 rounded-xl font-medium hover:bg-yellow-500/30 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Database className="w-5 h-5" />
+                  Exportar Datos
+                </button>
+                <button 
+                  onClick={async () => {
+                    if (confirm('¿Estás seguro de restaurar los datos? Esto sobrescribirá los datos actuales.')) {
+                      try {
+                        const res = await fetch('/api/admin/database', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ action: 'reset' }),
+                        });
+                        if (res.ok) {
+                          alert('Base de datos reiniciada correctamente');
+                          fetchDbStats();
+                        }
+                      } catch (error) {
+                        console.error('Reset error:', error);
+                        alert('Error al reiniciar');
+                      }
+                    }
+                  }}
+                  className="flex-1 py-3 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Reiniciar BD
+                </button>
+              </div>
             </div>
           )}
 
