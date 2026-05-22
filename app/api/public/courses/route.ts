@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const courses = await prisma.course.findMany({

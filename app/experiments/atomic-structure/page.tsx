@@ -77,7 +77,7 @@ function AtomSimulation({ electrons, nucleusRadius, electronRadius, orbitRadius 
   return (
     <Canvas shadows className="w-full h-full">
       <PerspectiveCamera makeDefault position={[8, 3, 8]} fov={50} />
-      <OrbitControls enablePan={true} />
+      <OrbitControls />
       
       <ambientLight intensity={0.3} />
       <pointLight position={[10, 10, 10]} intensity={1} />

@@ -19,6 +19,8 @@ const defaultSettings = {
 
 let systemSettings = { ...defaultSettings };
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);

@@ -83,10 +83,21 @@ function PendulumSimulation({ length, amplitude, damping, isRunning }: {
   damping: number;
   isRunning: boolean;
 }) {
+  const controlsRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.enablePan = false;
+      controlsRef.current.maxPolarAngle = Math.PI / 2;
+      controlsRef.current.minDistance = 5;
+      controlsRef.current.maxDistance = 15;
+    }
+  }, []);
+
   return (
     <Canvas shadows className="w-full h-full">
       <PerspectiveCamera makeDefault position={[5, 3, 8]} fov={50} />
-      <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2} minDistance={5} maxDistance={15} />
+      <OrbitControls ref={controlsRef} />
       
       <ambientLight intensity={0.4} />
       <pointLight position={[10, 10, 10]} intensity={1} castShadow />
