@@ -299,7 +299,7 @@ export default function AdminAnalyticsPage() {
                     <span className="font-medium">{cat.name}</span>
                     <div className="flex items-center gap-4">
                       <span className="text-gray-400">{cat.completions} completados</span>
-                      <span className="text-green-400">+{cat.growth}%</span>
+                      <span className={cat.growth >= 0 ? "text-green-400" : "text-red-400"}>{cat.growth >= 0 ? "+" : ""}{cat.growth}%</span>
                     </div>
                   </div>
                   <div className="h-3 bg-slate-700 rounded-full overflow-hidden">

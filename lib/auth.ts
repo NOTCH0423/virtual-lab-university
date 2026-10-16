@@ -35,6 +35,10 @@ export const authOptions: AuthOptions = {
           throw new Error('Invalid password');
         }
 
+        if (user.status && user.status !== 'ACTIVE') {
+          throw new Error('Cuenta desactivada');
+        }
+
         return {
           id: user.id,
           email: user.email,

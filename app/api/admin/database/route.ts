@@ -1,3 +1,4 @@
+import { isAdminRole, isSuperAdminRole } from '@/lib/admin';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || !isAdminRole((session.user as any)?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -43,6 +44,9 @@ export async function POST(request: Request) {
     }
 
     if (action === 'reset') {
+      if (!isSuperAdminRole((session!.user as any)?.role)) {
+        return NextResponse.json({ error: 'Solo un SUPER_ADMIN puede limpiar la base de datos' }, { status: 403 });
+      }
       await prisma.experimentResult.deleteMany();
       await prisma.experimentProgress.deleteMany();
       await prisma.userProgress.deleteMany();

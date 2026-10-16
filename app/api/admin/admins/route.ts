@@ -1,3 +1,4 @@
+import { isAdminRole, isSuperAdminRole } from '@/lib/admin';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import bcrypt from 'bcryptjs';
@@ -8,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || !isAdminRole((session.user as any)?.role)) {
       return NextResponse.json({ 
         error: 'No autorizado. Solo los administradores pueden crear otras cuentas de administrador.' 
       }, { status: 401 });
@@ -31,6 +32,9 @@ export async function POST(request: Request) {
       );
     }
 
+    if (role === 'ADMIN' && !isSuperAdminRole((session!.user as any)?.role)) {
+      return NextResponse.json({ error: 'Solo un SUPER_ADMIN puede crear administradores' }, { status: 403 });
+    }
     if (!['ADMIN', 'TEACHER'].includes(role)) {
       return NextResponse.json(
         { message: 'Rol inválido. Solo ADMIN o TEACHER.' },
