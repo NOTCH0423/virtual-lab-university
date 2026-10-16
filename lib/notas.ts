@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/session';
 import prisma from '@/lib/prisma';
 
 export const STAFF_ROLES = ['TEACHER', 'ADMIN', 'SUPER_ADMIN'];
@@ -8,7 +7,7 @@ export const STAFF_ROLES = ['TEACHER', 'ADMIN', 'SUPER_ADMIN'];
 export interface NotasUser { id: string; role: string; isStaff: boolean; isAdmin: boolean; isTeacher: boolean }
 
 export async function getNotasUser(): Promise<NotasUser | null> {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const id = (session?.user as any)?.id as string | undefined;
   if (!id) return null;
   const u = await prisma.user.findUnique({ where: { id }, select: { id: true, role: true, status: true } });

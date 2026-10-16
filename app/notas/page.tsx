@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/client-auth';
 import { useRouter } from 'next/navigation';
 import { Edit2, Plus, Printer, Save, Search, Trash2, X } from 'lucide-react';
 import Navigation from '@/components/Navigation';

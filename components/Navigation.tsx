@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import UserAvatar from '@/components/UserAvatar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { signOut, useSession } from '@/lib/client-auth';
 import {
   Menu, X, Beaker, BookOpen, BarChart3, Settings, LogOut, ChevronDown, FlaskConical, Atom, Dna,
   Gauge, Zap, Shield, GraduationCap, Trophy, User, LayoutGrid, ClipboardList,
@@ -53,7 +54,6 @@ export default function Navigation() {
   const isTeacher = role === 'TEACHER';
   const roleLabel = ROLE_LABEL[role] || 'Estudiante';
   const name = session?.user?.name || 'Usuario';
-  const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const roleItems = [
     ...(isTeacher ? [{ name: 'Panel Profesor', href: '/teacher', icon: GraduationCap }] : []),
@@ -146,9 +146,7 @@ export default function Navigation() {
             <div className="relative hidden md:block" ref={userRef}>
               <button onClick={() => setUserOpen((v) => !v)}
                 className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white/10" aria-expanded={userOpen}>
-                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-sm font-medium">
-                  {initials}
-                </span>
+                <UserAvatar src={session?.user?.image} name={name} className="w-8 h-8 text-sm" />
                 <span className="text-left text-sm">
                   <span className="block font-medium text-white leading-tight">{name}</span>
                   <span className="block text-xs text-gray-400 leading-tight">{roleLabel}</span>
@@ -194,7 +192,7 @@ export default function Navigation() {
           >
             <div className="px-4 py-4 space-y-1">
               <div className="flex items-center gap-3 px-3 pb-3 mb-2 border-b border-white/10">
-                <span className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-sm font-medium">{initials}</span>
+                <UserAvatar src={session?.user?.image} name={name} className="w-9 h-9 text-sm" />
                 <span>
                   <span className="block text-white text-sm">{name}</span>
                   <span className="block text-xs text-gray-400">{roleLabel}</span>

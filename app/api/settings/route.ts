@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +13,7 @@ const userSelect = {
 } as const;
 
 async function getUserId() {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const id = (session?.user as any)?.id as string | undefined;
   if (id) return id;
   if (session?.user?.email) {

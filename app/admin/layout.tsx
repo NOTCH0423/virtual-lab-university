@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import UserAvatar from '@/components/UserAvatar';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -29,7 +30,7 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { signOut, useSession } from 'next-auth/react';
+import { signOut, useSession } from '@/lib/client-auth';
 import { ToastProvider } from '@/components/admin/ui';
 
 const siteLinks = [
@@ -182,7 +183,6 @@ export default function AdminLayout({
     );
   }
 
-  const initials = (session?.user?.name || 'AD').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <ToastProvider>
@@ -264,9 +264,7 @@ export default function AdminLayout({
 
         <div className="p-4 border-t border-white/10">
           <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-sm font-bold">
-              {initials}
-            </div>
+            <UserAvatar src={session?.user?.image} name={session?.user?.name || 'AD'} className="w-10 h-10 text-sm font-bold" gradient="from-red-500 to-orange-500" />
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{session?.user?.name}</p>

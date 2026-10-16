@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/client-auth';
 import { AlertTriangle, Award, BookOpen, ClipboardList, Clock, Loader2, Users } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 

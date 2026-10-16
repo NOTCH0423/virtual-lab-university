@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { signIn } from 'next-auth/react';
+import { signIn } from '@/lib/client-auth';
 import { Beaker, GraduationCap, AlertCircle, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 

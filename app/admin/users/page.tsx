@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/client-auth';
 import { Edit2, Plus, Search, Trash2, UserCheck, UserX, ShieldAlert } from 'lucide-react';
 import {
   api, Badge, Button, ConfirmDialog, Field, Input, Modal, PageHeader, Select, Spinner, useToast,

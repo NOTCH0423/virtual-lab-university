@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn } from '@/lib/client-auth';
 import { Beaker, Eye, EyeOff, ArrowRight, Mail, Lock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 

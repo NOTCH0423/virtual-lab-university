@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import UserAvatar from '@/components/UserAvatar';
+import { squareResize, AVATAR_TYPES, AVATAR_MAX_BYTES } from '@/lib/avatar-client';
 import Link from 'next/link';
 import { roleLabel } from '@/lib/roles';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession, signOut } from '@/lib/client-auth';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import {
@@ -22,6 +24,7 @@ import {
   LogOut,
   Trophy,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 
 interface UserData {
@@ -76,7 +79,54 @@ interface UserData {
 }
 
 export default function ProfilePage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const notify = (msg: string, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500); };
+
+  const setAvatar = async (avatar: string | null) => {
+    setUserData((prev: any) => (prev ? { ...prev, user: { ...prev.user, avatar } } : prev));
+    try { await updateSession(); } catch { /* el JWT se refresca en la siguiente petición */ }
+  };
+
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!AVATAR_TYPES.includes(file.type)) return notify('Formato no permitido. Usa JPG, PNG o WebP.', false);
+    if (file.size > AVATAR_MAX_BYTES) return notify('La imagen supera 2 MB.', false);
+    setUploading(true);
+    try {
+      const blob = await squareResize(file, 256);
+      const fd = new FormData();
+      fd.append('file', new File([blob], 'avatar.' + (blob.type === 'image/webp' ? 'webp' : 'jpg'), { type: blob.type }));
+      const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo subir la foto');
+      await setAvatar(data.avatar);
+      notify('Foto de perfil actualizada');
+    } catch (err: any) {
+      notify(err?.message || 'No se pudo subir la foto', false);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!confirm('¿Quitar tu foto de perfil?')) return;
+    setUploading(true);
+    try {
+      const res = await fetch('/api/profile/avatar', { method: 'DELETE' });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo quitar la foto');
+      await setAvatar(null);
+      notify('Foto de perfil eliminada');
+    } catch (err: any) {
+      notify(err?.message || 'No se pudo quitar la foto', false);
+    } finally {
+      setUploading(false);
+    }
+  };
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,9 +213,6 @@ export default function ProfilePage() {
     return null;
   }
 
-  const initials = userData?.user?.name
-    ? userData.user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-    : '??';
 
   const tabs = [
     { id: 'profile', label: 'Perfil', icon: User },
@@ -177,6 +224,11 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-slate-950">
       <Navigation />
+      {toast && (
+        <div role="status" className={`fixed top-20 right-4 z-[60] px-4 py-3 rounded-xl shadow-lg text-sm ${toast.ok ? 'bg-green-600' : 'bg-red-600'} text-white`}>
+          {toast.msg}
+        </div>
+      )}
 
       <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-3 gap-8">
@@ -184,13 +236,26 @@ export default function ProfilePage() {
             <div className="gradient-border p-6 sticky top-24">
               <div className="text-center mb-6">
                 <div className="relative inline-block">
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-4xl font-bold mx-auto">
-                    {initials}
-                  </div>
-                  <button className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center hover:bg-primary-600 transition-colors">
+                  <UserAvatar src={userData?.user?.avatar} name={userData?.user?.name} className="w-32 h-32 text-4xl font-bold mx-auto" />
+                  {uploading && (
+                    <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center pointer-events-none">
+                      <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                  <label title="Cambiar foto de perfil" aria-label="Cambiar foto de perfil" data-testid="avatar-camera"
+                    className={`absolute bottom-0 right-0 z-10 w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center hover:bg-primary-600 transition-colors cursor-pointer ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
                     <Camera className="w-5 h-5" />
-                  </button>
+                    <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={onPickFile} disabled={uploading} />
+                  </label>
+                  {userData?.user?.avatar && (
+                    <button type="button" onClick={removeAvatar} disabled={uploading}
+                      title="Quitar foto" aria-label="Quitar foto de perfil"
+                      className="absolute bottom-0 left-0 z-10 w-9 h-9 rounded-full bg-red-500/90 flex items-center justify-center hover:bg-red-600 transition-colors disabled:opacity-60">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                <p className="text-xs text-gray-500 mt-2">JPG, PNG o WebP · máx. 2 MB</p>
                 <h2 className="text-xl font-bold mt-4">{userData?.user?.name || 'Usuario'}</h2>
                 <p className="text-gray-400 text-sm">{userData?.user?.email}</p>
                 <span className="inline-block mt-2 px-3 py-1 bg-primary-500/20 text-primary-400 rounded-full text-xs font-medium">

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/session';
 import prisma from '@/lib/prisma';
 
 export const ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'] as const;
@@ -22,7 +21,7 @@ export interface AdminUser {
 
 /** Devuelve el admin actual (rol leído de la BD) o null. */
 export async function getAdmin(): Promise<AdminUser | null> {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const id = (session?.user as any)?.id as string | undefined;
   const email = session?.user?.email || undefined;
   if (!id && !email) return null;

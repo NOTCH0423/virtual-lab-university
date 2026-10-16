@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
+import { AuthProvider } from '@/lib/client-auth';
 import { ReactNode, useEffect } from 'react';
 import { applyAppearance, loadPreferences } from '@/lib/preferences';
 
@@ -25,9 +25,9 @@ function AppearanceApplier() {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
+    <AuthProvider>
       <AppearanceApplier />
       {children}
-    </SessionProvider>
+    </AuthProvider>
   );
 }
