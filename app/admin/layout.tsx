@@ -20,12 +20,22 @@ import {
   Clock,
   RefreshCw,
   Bell,
+  Home,
+  UserCircle,
+  ArrowLeft,
   Wifi,
   WifiOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { signOut, useSession } from 'next-auth/react';
 import { ToastProvider } from '@/components/admin/ui';
+
+const siteLinks = [
+  { label: 'Volver al sitio', icon: Home, href: '/dashboard' },
+  { label: 'Laboratorios', icon: FlaskConical, href: '/laboratories' },
+  { label: 'Cursos', icon: BookOpen, href: '/courses' },
+  { label: 'Mi perfil', icon: UserCircle, href: '/profile' },
+];
 
 const sidebarItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
@@ -151,7 +161,7 @@ export default function AdminLayout({
       <aside className={`glass-dark border-r border-white/10 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           {!isCollapsed && (
-            <Link href="/admin" className="flex items-center gap-2">
+            <Link href="/dashboard" title="Ir al sitio" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
                 <Beaker className="w-6 h-6 text-white" />
               </div>
@@ -185,6 +195,21 @@ export default function AdminLayout({
             );
           })}
         </nav>
+
+        <div className="px-4 pb-4 space-y-1 border-t border-white/10 pt-4">
+          {!isCollapsed && <p className="px-4 text-xs uppercase tracking-wide text-gray-500 mb-1">Sitio</p>}
+          {siteLinks.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              className={`flex items-center gap-3 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all ${isCollapsed ? 'justify-center px-2' : ''}`}
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && <span className="text-sm">{item.label}</span>}
+            </Link>
+          ))}
+        </div>
 
         <div className="p-4 border-t border-white/10">
           <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
@@ -223,6 +248,12 @@ export default function AdminLayout({
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-4 py-2 glass rounded-xl text-sm hover:bg-white/10 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Volver al sitio
+              </Link>
               <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
                 connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' :
                 connectionStatus === 'updating' ? 'bg-yellow-500/20 text-yellow-400' :
