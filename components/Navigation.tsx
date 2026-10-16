@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
   Menu, X, Beaker, BookOpen, BarChart3, Settings, LogOut, ChevronDown, FlaskConical, Atom, Dna,
-  Gauge, Zap, Shield, GraduationCap, Trophy, User, LayoutGrid,
+  Gauge, Zap, Shield, GraduationCap, Trophy, User, LayoutGrid, ClipboardList,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,7 +56,7 @@ export default function Navigation() {
   const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const roleItems = [
-    ...(isTeacher ? [{ name: 'Notas', href: '/teacher', icon: GraduationCap }] : []),
+    ...(isTeacher ? [{ name: 'Panel Profesor', href: '/teacher', icon: GraduationCap }] : []),
     ...(isAdmin ? [{ name: 'Admin', href: '/admin', icon: Shield }] : []),
   ];
 
@@ -127,6 +127,10 @@ export default function Navigation() {
 
               <Link href="/achievements" className={linkCls(active('/achievements'))}>
                 <Trophy className="w-4 h-4" /> Logros
+              </Link>
+
+              <Link href="/notas" className={linkCls(active('/notas'))}>
+                <ClipboardList className="w-4 h-4" /> Notas
               </Link>
 
               {roleItems.map((i) => (
@@ -208,6 +212,7 @@ export default function Navigation() {
                 ))}
               </div>
               <MobileLink href="/achievements" icon={Trophy} label="Logros" on={active('/achievements')} />
+              <MobileLink href="/notas" icon={ClipboardList} label="Notas" on={active('/notas')} />
               {roleItems.length > 0 && <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-wide text-gray-500">{isAdmin ? 'Administración' : 'Docencia'}</p>}
               {roleItems.map((i) => <MobileLink key={i.href} href={i.href} icon={i.icon} label={i.name} on={active(i.href)} />)}
               <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-wide text-gray-500">Cuenta</p>

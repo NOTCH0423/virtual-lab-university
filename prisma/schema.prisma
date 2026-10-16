@@ -30,6 +30,8 @@ model User {
   achievements  UserAchievement[]
   sessions      Session[]
   certificates  Certificate[]
+  academicProfile AcademicProfile?
+  subjectGrades   SubjectGrade[]
   
   @@map("users")
 }
@@ -236,4 +238,42 @@ model SystemStats {
   updatedAt     DateTime @updatedAt
   
   @@map("system_stats")
+}
+
+// ===== Notas (consulta de notas actuales, estilo portal universitario) =====
+model AcademicProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identificacion     String?
+  categoria          String?
+  situacion          String?
+  programa           String?
+  jornada            String?
+  pensum             String?
+  ubicacionSemestral String?
+  periodo            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("academic_profiles")
+}
+
+model SubjectGrade {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codigo       String
+  descripcion  String
+  creditos     Int      @default(0)
+  notaFinal    Float?
+  habilitacion Float?
+  definitiva   Float?
+  fallas       Int      @default(0)
+  periodo      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@map("subject_grades")
 }

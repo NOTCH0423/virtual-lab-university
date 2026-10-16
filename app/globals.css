@@ -136,3 +136,14 @@ html.no-animations *::after {
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
 }
+
+/* ===== Impresión (Notas) ===== */
+@media print {
+  .no-print, [role='status'] { display: none !important; }
+  html, body, .bg-slate-950 { background: #fff !important; color: #000 !important; filter: none !important; }
+  .print-area, .print-area * { color: #000 !important; background: transparent !important; border-color: #999 !important; }
+  .print-area .text-red-500 { color: #c00 !important; }
+  .print-area table { border-collapse: collapse; }
+  .print-area td, .print-area th { border: 1px solid #999 !important; }
+  main { padding-top: 0 !important; }
+}
