@@ -1,211 +1,234 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { 
-  Menu, 
-  X, 
-  Beaker, 
-  Users, 
-  BookOpen, 
-  BarChart3, 
-  Settings, 
-  LogOut,
-  ChevronDown,
-  GraduationCap,
-  FlaskConical,
-  Atom,
-  Dna,
-  Gauge,
-  Zap,
-  Shield,
-  GraduationCap as TeacherIcon,
+import { signOut, useSession } from 'next-auth/react';
+import {
+  Menu, X, Beaker, BookOpen, BarChart3, Settings, LogOut, ChevronDown, FlaskConical, Atom, Dna,
+  Gauge, Zap, Shield, GraduationCap, Trophy, User, LayoutGrid,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  { name: 'Laboratorios', href: '/laboratories', icon: FlaskConical },
-  { name: 'Cursos', href: '/courses', icon: BookOpen },
-  { name: 'Simulaciones', href: '/simulations', icon: Atom },
+const learnItems = [
+  { name: 'Laboratorios', href: '/laboratories', icon: FlaskConical, desc: 'Prácticas virtuales' },
+  { name: 'Cursos', href: '/courses', icon: BookOpen, desc: 'Rutas de aprendizaje' },
+  { name: 'Simulaciones', href: '/simulations', icon: Atom, desc: 'Experimenta en 3D' },
 ];
 
-const laboratoryCategories = [
+const categories = [
   { name: 'Física', icon: Gauge, color: 'text-blue-400', bgColor: 'bg-blue-400/10' },
   { name: 'Química', icon: FlaskConical, color: 'text-green-400', bgColor: 'bg-green-400/10' },
   { name: 'Biología', icon: Dna, color: 'text-purple-400', bgColor: 'bg-purple-400/10' },
   { name: 'Ingeniería', icon: Zap, color: 'text-yellow-400', bgColor: 'bg-yellow-400/10' },
 ];
 
+const ROLE_LABEL: Record<string, string> = {
+  SUPER_ADMIN: 'Super Administrador', ADMIN: 'Administrador', TEACHER: 'Profesor', STUDENT: 'Estudiante',
+};
+
+function useClickOutside(ref: React.RefObject<HTMLElement>, onOut: () => void) {
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onOut(); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [ref, onOut]);
+}
+
 export default function Navigation() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showLabs, setShowLabs] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [learnOpen, setLearnOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const pathname = usePathname();
   const { data: session } = useSession();
-  
-  const rawRole = String((session?.user as any)?.role || 'STUDENT').toUpperCase();
-  const isAdmin = rawRole === 'ADMIN' || rawRole === 'SUPER_ADMIN';
-  const userRole = isAdmin ? 'ADMIN' : rawRole;
-  const roleLabel =
-    rawRole === 'SUPER_ADMIN' ? 'Super Administrador' :
-    rawRole === 'ADMIN' ? 'Administrador' :
-    rawRole === 'TEACHER' ? 'Profesor' : 'Estudiante';
+  const learnRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
+  useClickOutside(learnRef, () => setLearnOpen(false));
+  useClickOutside(userRef, () => setUserOpen(false));
+
+  useEffect(() => { setMobileOpen(false); setLearnOpen(false); setUserOpen(false); }, [pathname]);
+
+  const role = String((session?.user as any)?.role || 'STUDENT').toUpperCase();
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const isTeacher = role === 'TEACHER';
+  const roleLabel = ROLE_LABEL[role] || 'Estudiante';
+  const name = session?.user?.name || 'Usuario';
+  const initials = name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const roleItems = [
+    ...(isTeacher ? [{ name: 'Notas', href: '/teacher', icon: GraduationCap }] : []),
+    ...(isAdmin ? [{ name: 'Admin', href: '/admin', icon: Shield }] : []),
+  ];
+
+  const active = (href: string) => pathname === href || pathname.startsWith(href + '/');
+  const learnActive = learnItems.some((i) => active(i.href));
+  const linkCls = (on: boolean) =>
+    `px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+      on ? 'bg-primary-500/20 text-primary-400' : 'text-gray-300 hover:text-white hover:bg-white/10'
+    }`;
+  const logout = () => signOut({ callbackUrl: '/login' });
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
                 <Beaker className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text hidden sm:block">
-                Virtual Lab
-              </span>
+              <span className="text-xl font-bold gradient-text hidden sm:block">Virtual Lab</span>
             </Link>
 
             <div className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    pathname === item.href
-                      ? 'bg-primary-500/20 text-primary-400'
-                      : 'text-gray-300 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              
-              <div 
-                className="relative"
-                onMouseEnter={() => setShowLabs(true)}
-                onMouseLeave={() => setShowLabs(false)}
-              >
-                <button className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white hover:bg-white/5 flex items-center gap-1 transition-all">
-                  Categorías <ChevronDown className="w-4 h-4" />
+              <Link href="/dashboard" className={linkCls(active('/dashboard'))}>
+                <BarChart3 className="w-4 h-4" /> Inicio
+              </Link>
+
+              <div className="relative" ref={learnRef}>
+                <button onClick={() => setLearnOpen((v) => !v)} className={linkCls(learnActive)} aria-expanded={learnOpen}>
+                  <LayoutGrid className="w-4 h-4" /> Aprender
+                  <ChevronDown className={`w-4 h-4 transition-transform ${learnOpen ? 'rotate-180' : ''}`} />
                 </button>
-                
                 <AnimatePresence>
-                  {showLabs && (
+                  {learnOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute top-full left-0 mt-2 w-56 glass-dark rounded-xl p-2"
+                      initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                      className="absolute top-full left-0 mt-2 w-[30rem] glass-dark rounded-xl p-3 shadow-xl grid grid-cols-2 gap-3"
                     >
-                      {laboratoryCategories.map((cat) => (
-                        <Link
-                          key={cat.name}
-                          href={`/laboratories?category=${cat.name.toLowerCase()}`}
-                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
-                        >
-                          <div className={`w-8 h-8 rounded-lg ${cat.bgColor} flex items-center justify-center`}>
-                            <cat.icon className={`w-4 h-4 ${cat.color}`} />
-                          </div>
-                          <span className="text-sm text-gray-300">{cat.name}</span>
-                        </Link>
-                      ))}
+                      <div>
+                        <p className="px-2 pb-1 text-xs uppercase tracking-wide text-gray-500">Explorar</p>
+                        {learnItems.map((i) => (
+                          <Link key={i.href} href={i.href} className="flex items-start gap-3 px-2 py-2 rounded-lg hover:bg-white/10">
+                            <i.icon className="w-5 h-5 text-primary-400 mt-0.5" />
+                            <span>
+                              <span className="block text-sm text-white">{i.name}</span>
+                              <span className="block text-xs text-gray-400">{i.desc}</span>
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                      <div>
+                        <p className="px-2 pb-1 text-xs uppercase tracking-wide text-gray-500">Categorías</p>
+                        {categories.map((c) => (
+                          <Link key={c.name} href={`/laboratories?category=${c.name.toLowerCase()}`}
+                            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/10">
+                            <span className={`w-7 h-7 rounded-lg ${c.bgColor} flex items-center justify-center`}>
+                              <c.icon className={`w-4 h-4 ${c.color}`} />
+                            </span>
+                            <span className="text-sm text-gray-300">{c.name}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
-                <Link
-                  href={userRole === 'ADMIN' ? '/admin' : '/teacher'}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    pathname === '/admin' || pathname === '/teacher'
-                      ? 'bg-purple-500/20 text-purple-400'
-                      : 'text-purple-300 hover:text-purple-200 hover:bg-purple-500/10'
-                  }`}
-                >
-                  {userRole === 'ADMIN' ? 'Admin' : 'Profesor'}
+              <Link href="/achievements" className={linkCls(active('/achievements'))}>
+                <Trophy className="w-4 h-4" /> Logros
+              </Link>
+
+              {roleItems.map((i) => (
+                <Link key={i.href} href={i.href}
+                  className={`${linkCls(active(i.href))} ${!active(i.href) ? '!text-purple-300' : ''}`}>
+                  <i.icon className="w-4 h-4" /> {i.name}
                 </Link>
-              )}
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-sm font-medium">
-                {session?.user?.name ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : 'U'}
-              </div>
-              <div className="text-sm">
-                <p className="font-medium text-white">{session?.user?.name || 'Usuario'}</p>
-                <p className="text-xs text-gray-400">
-                  {roleLabel}
-                </p>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="relative hidden md:block" ref={userRef}>
+              <button onClick={() => setUserOpen((v) => !v)}
+                className="flex items-center gap-2 px-2 py-1 rounded-xl hover:bg-white/10" aria-expanded={userOpen}>
+                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-sm font-medium">
+                  {initials}
+                </span>
+                <span className="text-left text-sm">
+                  <span className="block font-medium text-white leading-tight">{name}</span>
+                  <span className="block text-xs text-gray-400 leading-tight">{roleLabel}</span>
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${userOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {userOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                    className="absolute right-0 top-full mt-2 w-56 glass-dark rounded-xl p-2 shadow-xl"
+                  >
+                    <div className="px-3 py-2 border-b border-white/10 mb-1">
+                      <p className="text-sm text-white truncate">{name}</p>
+                      <p className="text-xs text-gray-400 truncate">{session?.user?.email}</p>
+                    </div>
+                    <Link href="/profile" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-gray-300">
+                      <User className="w-4 h-4" /> Mi perfil
+                    </Link>
+                    <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/10 text-sm text-gray-300">
+                      <Settings className="w-4 h-4" /> Configuración
+                    </Link>
+                    <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-sm text-red-300">
+                      <LogOut className="w-4 h-4" /> Cerrar sesión
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-            
-            <Link 
-              href="/settings"
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <Settings className="w-5 h-5 text-gray-400" />
-            </Link>
-            
-            <Link 
-              href="/api/auth/signout"
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-            >
-              <LogOut className="w-5 h-5 text-gray-400" />
-            </Link>
 
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-white/10"
-            >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <button onClick={() => setMobileOpen((v) => !v)} className="md:hidden p-2 rounded-lg hover:bg-white/10" aria-label="Menú">
+              {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
-        {isOpen && (
+        {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass-dark border-t border-white/10"
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="md:hidden glass-dark border-t border-white/10 max-h-[calc(100vh-4rem)] overflow-y-auto"
           >
-            <div className="px-4 py-4 space-y-2">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
-                    pathname === item.href
-                      ? 'bg-primary-500/20 text-primary-400'
-                      : 'text-gray-300'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.name}
-                </Link>
-              ))}
-              {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
-                <Link
-                  href={userRole === 'ADMIN' ? '/admin' : '/teacher'}
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-purple-300"
-                >
-                  {userRole === 'ADMIN' ? <Shield className="w-5 h-5" /> : <TeacherIcon className="w-5 h-5" />}
-                  {userRole === 'ADMIN' ? 'Panel Admin' : 'Panel Profesor'}
-                </Link>
-              )}
+            <div className="px-4 py-4 space-y-1">
+              <div className="flex items-center gap-3 px-3 pb-3 mb-2 border-b border-white/10">
+                <span className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-secondary-400 flex items-center justify-center text-sm font-medium">{initials}</span>
+                <span>
+                  <span className="block text-white text-sm">{name}</span>
+                  <span className="block text-xs text-gray-400">{roleLabel}</span>
+                </span>
+              </div>
+              <MobileLink href="/dashboard" icon={BarChart3} label="Inicio" on={active('/dashboard')} />
+              <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-wide text-gray-500">Aprender</p>
+              {learnItems.map((i) => <MobileLink key={i.href} href={i.href} icon={i.icon} label={i.name} on={active(i.href)} />)}
+              <div className="grid grid-cols-2 gap-1 px-1 pb-1">
+                {categories.map((c) => (
+                  <Link key={c.name} href={`/laboratories?category=${c.name.toLowerCase()}`}
+                    className="flex items-center gap-2 px-2 py-2 rounded-lg text-sm text-gray-300 hover:bg-white/10">
+                    <c.icon className={`w-4 h-4 ${c.color}`} /> {c.name}
+                  </Link>
+                ))}
+              </div>
+              <MobileLink href="/achievements" icon={Trophy} label="Logros" on={active('/achievements')} />
+              {roleItems.length > 0 && <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-wide text-gray-500">{isAdmin ? 'Administración' : 'Docencia'}</p>}
+              {roleItems.map((i) => <MobileLink key={i.href} href={i.href} icon={i.icon} label={i.name} on={active(i.href)} />)}
+              <p className="px-3 pt-3 pb-1 text-xs uppercase tracking-wide text-gray-500">Cuenta</p>
+              <MobileLink href="/profile" icon={User} label="Mi perfil" on={active('/profile')} />
+              <MobileLink href="/settings" icon={Settings} label="Configuración" on={active('/settings')} />
+              <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-red-300 hover:bg-red-500/10">
+                <LogOut className="w-5 h-5" /> Cerrar sesión
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </nav>
+  );
+}
+
+function MobileLink({ href, icon: Icon, label, on }: { href: string; icon: any; label: string; on: boolean }) {
+  return (
+    <Link href={href}
+      className={`flex items-center gap-3 px-3 py-3 rounded-lg ${on ? 'bg-primary-500/20 text-primary-400' : 'text-gray-300 hover:bg-white/10'}`}>
+      <Icon className="w-5 h-5" /> {label}
+    </Link>
   );
 }

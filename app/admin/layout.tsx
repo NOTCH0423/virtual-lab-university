@@ -20,6 +20,7 @@ import {
   Clock,
   RefreshCw,
   Bell,
+  Database,
   Home,
   UserCircle,
   ArrowLeft,
@@ -37,14 +38,33 @@ const siteLinks = [
   { label: 'Mi perfil', icon: UserCircle, href: '/profile' },
 ];
 
-const sidebarItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
-  { id: 'users', label: 'Usuarios', icon: Users, href: '/admin/users' },
-  { id: 'laboratories', label: 'Laboratorios', icon: FlaskConical, href: '/admin/laboratories' },
-  { id: 'experiments', label: 'Experimentos', icon: Beaker, href: '/admin/experiments' },
-  { id: 'courses', label: 'Cursos', icon: BookOpen, href: '/admin/courses' },
-  { id: 'analytics', label: 'Analíticas', icon: BarChart3, href: '/admin/analytics' },
-  { id: 'settings', label: 'Configuración', icon: Settings, href: '/admin/settings' },
+const sidebarGroups = [
+  {
+    title: 'General',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+      { id: 'analytics', label: 'Analíticas', icon: BarChart3, href: '/admin/analytics' },
+    ],
+  },
+  {
+    title: 'Gestión',
+    items: [{ id: 'users', label: 'Usuarios', icon: Users, href: '/admin/users' }],
+  },
+  {
+    title: 'Contenido',
+    items: [
+      { id: 'laboratories', label: 'Laboratorios', icon: FlaskConical, href: '/admin/laboratories' },
+      { id: 'experiments', label: 'Experimentos', icon: Beaker, href: '/admin/experiments' },
+      { id: 'courses', label: 'Cursos', icon: BookOpen, href: '/admin/courses' },
+    ],
+  },
+  {
+    title: 'Sistema',
+    items: [
+      { id: 'settings', label: 'Configuración', icon: Settings, href: '/admin/settings' },
+      { id: 'database', label: 'Base de datos', icon: Database, href: '/admin/settings?tab=database' },
+    ],
+  },
 ];
 
 interface AdminStats {
@@ -88,6 +108,10 @@ export default function AdminLayout({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const [currentTab, setCurrentTab] = useState<string | null>(null);
+  useEffect(() => {
+    setCurrentTab(new URLSearchParams(window.location.search).get('tab'));
+  }, [pathname]);
   const { data: session, status } = useSession();
   const role = String((session?.user as any)?.role || '').toUpperCase();
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
@@ -176,24 +200,46 @@ export default function AdminLayout({
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
-          {sidebarItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-primary-500/20 to-secondary-500/20 text-primary-400 border border-primary-500/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                } ${isCollapsed ? 'justify-center px-2' : ''}`}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!isCollapsed && <span className="font-medium">{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+          {sidebarGroups.map((group) => (
+            <div key={group.title}>
+              {!isCollapsed ? (
+                <p className="px-4 mb-1 text-xs uppercase tracking-wide text-gray-500">{group.title}</p>
+              ) : (
+                <div className="mx-3 mb-2 border-t border-white/10" />
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const [path, query] = item.href.split('?');
+                  const itemTab = query ? new URLSearchParams(query).get('tab') : null;
+                  const isActive =
+                    path === '/admin'
+                      ? pathname === '/admin'
+                      : (pathname === path || pathname.startsWith(path + '/')) &&
+                        (path !== '/admin/settings' || (itemTab ? currentTab === itemTab : currentTab !== 'database'));
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      title={item.label}
+                      onClick={() => {
+                        setCurrentTab(itemTab);
+                        setTimeout(() => window.dispatchEvent(new Event('admin-tab')), 0);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-primary-500/20 to-secondary-500/20 text-primary-400 border border-primary-500/30'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      } ${isCollapsed ? 'justify-center px-2' : ''}`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="px-4 pb-4 space-y-1 border-t border-white/10 pt-4">

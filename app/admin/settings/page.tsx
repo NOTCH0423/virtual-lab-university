@@ -33,6 +33,17 @@ interface SettingsData {
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
+
+  // Permite abrir una pestaña directamente: /admin/settings?tab=database
+  useEffect(() => {
+    const sync = () => {
+      const t = new URLSearchParams(window.location.search).get('tab');
+      if (t) setActiveTab(t);
+    };
+    sync();
+    window.addEventListener('admin-tab', sync);
+    return () => window.removeEventListener('admin-tab', sync);
+  }, []);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'updating'>('updating');
   const [dbStats, setDbStats] = useState<{ users: number; laboratories: number; experiments: number; sessions: number } | null>(null);
   const [saving, setSaving] = useState(false);
