@@ -18,6 +18,7 @@ export async function GET(
       },
       include: {
         experiments: {
+          where: { status: 'PUBLISHED' },
           orderBy: { order: 'asc' },
         },
         _count: { select: { experiments: true, progress: true } },

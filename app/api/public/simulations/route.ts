@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const experiments = await prisma.experiment.findMany({
+      where: { status: 'PUBLISHED' },
       include: {
         laboratory: { select: { title: true, slug: true } },
         _count: { select: { results: true } },

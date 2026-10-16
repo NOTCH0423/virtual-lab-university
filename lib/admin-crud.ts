@@ -188,4 +188,5 @@ export const experimentSpec: Spec = {
   instructions: { type: 'text' },
   formulas: { type: 'text' },
   theory: { type: 'text' },
+  status: { type: 'enum', values: CONTENT_STATUSES },
 };

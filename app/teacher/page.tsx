@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AiExperimentButton } from '@/components/AiExperimentCreator';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/client-auth';
@@ -63,9 +64,12 @@ export default function TeacherPage() {
             <h1 className="text-3xl font-bold">Panel del Profesor</h1>
             <p className="text-gray-400">{session?.user?.name}</p>
           </div>
-          <Link href="/notas" className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 font-medium">
-            Calificar estudiantes
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <AiExperimentButton />
+            <Link href="/notas" className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 font-medium">
+              Calificar estudiantes
+            </Link>
+          </div>
         </div>
 
         {error ? (
