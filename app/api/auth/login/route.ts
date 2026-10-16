@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { verifyPassword } from '@/lib/password';
+import { createUserSession } from '@/lib/session-token';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const limit = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { message: 'Demasiados intentos. Intenta más tarde.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(limit.retryAfterSec) },
+        }
+      );
+    }
+
     const body = await request.json();
-    const { email, password } = body;
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
 
     if (!email || !password) {
       return NextResponse.json(
@@ -18,15 +33,14 @@ export async function POST(request: NextRequest) {
       where: { email },
     });
 
-    if (!user) {
+    if (!user || user.status !== 'ACTIVE') {
       return NextResponse.json(
         { message: 'Credenciales inválidas' },
         { status: 401 }
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
+    const isPasswordValid = await verifyPassword(password, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
         { message: 'Credenciales inválidas' },
@@ -34,28 +48,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update last active
     await prisma.user.update({
       where: { id: user.id },
       data: { lastActiveAt: new Date() },
     });
 
-    // Update system stats
-    await prisma.systemStats.update({
-      where: { id: 'global-stats' },
-      data: { activeUsers: { increment: 1 } },
-    });
-
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
-
-    // Create session
-    const session = await prisma.session.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
+    const session = await createUserSession(user.id);
 
     return NextResponse.json({
       success: true,
@@ -68,6 +66,7 @@ export async function POST(request: NextRequest) {
         university: user.university,
       },
       token: session.token,
+      expiresAt: session.expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Login error:', error);

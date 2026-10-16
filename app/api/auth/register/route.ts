@@ -1,11 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { hashPassword, validatePasswordStrength } from '@/lib/password';
+import { createUserSession } from '@/lib/session-token';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { ROLES } from '@/lib/roles';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const limit = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { message: 'Demasiados registros. Intenta más tarde.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(limit.retryAfterSec) },
+        }
+      );
+    }
+
     const body = await request.json();
-    const { email, password, firstName, lastName, university, career } = body;
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+    const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+    const university =
+      typeof body.university === 'string' ? body.university.trim() || null : null;
+    const career = typeof body.career === 'string' ? body.career.trim() || null : null;
 
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
@@ -14,18 +37,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { message: 'La contraseña debe tener al menos 6 caracteres' },
-        { status: 400 }
-      );
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ message: 'Email inválido' }, { status: 400 });
     }
 
-    if (!email.includes('@')) {
-      return NextResponse.json(
-        { message: 'Email inválido' },
-        { status: 400 }
-      );
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+      return NextResponse.json({ message: strength.message }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -39,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password);
 
     const user = await prisma.user.create({
       data: {
@@ -48,43 +66,38 @@ export async function POST(request: NextRequest) {
         name: `${firstName} ${lastName}`,
         firstName,
         lastName,
-        university: university || null,
-        career: career || null,
-        role: 'STUDENT',
+        university,
+        career,
+        role: ROLES.STUDENT,
+        status: 'ACTIVE',
       },
     });
 
-    // Update system stats
-    await prisma.systemStats.update({
-      where: { id: 'global-stats' },
-      data: {
-        totalUsers: { increment: 1 },
-        activeUsers: { increment: 1 },
-      },
-    });
+    await prisma.systemStats
+      .update({
+        where: { id: 'global-stats' },
+        data: {
+          totalUsers: { increment: 1 },
+          activeUsers: { increment: 1 },
+        },
+      })
+      .catch(() => undefined);
 
-    // Update daily stats
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    await prisma.dailyStats.upsert({
-      where: { date: today },
-      update: { newUsers: { increment: 1 } },
-      create: {
-        date: today,
-        newUsers: 1,
-      },
-    });
 
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64');
+    await prisma.dailyStats
+      .upsert({
+        where: { date: today },
+        update: { newUsers: { increment: 1 } },
+        create: {
+          date: today,
+          newUsers: 1,
+        },
+      })
+      .catch(() => undefined);
 
-    const session = await prisma.session.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
+    const session = await createUserSession(user.id);
 
     return NextResponse.json({
       success: true,
@@ -97,6 +110,7 @@ export async function POST(request: NextRequest) {
         lastName: user.lastName,
       },
       token: session.token,
+      expiresAt: session.expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Register error:', error);

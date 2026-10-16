@@ -291,6 +291,8 @@ export default function AdminUsersPage() {
 
   const getRoleBadge = (role: string) => {
     switch (role) {
+      case 'SUPER_ADMIN':
+        return { label: 'Super Admin', color: 'text-amber-400', class: 'bg-amber-500/20 text-amber-300', icon: Crown };
       case 'ADMIN':
         return { class: 'bg-red-500/20 text-red-400 border border-red-500/30', icon: Crown, color: 'text-red-400' };
       case 'TEACHER':
@@ -434,6 +436,7 @@ export default function AdminUsersPage() {
             className="px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:outline-none focus:border-primary-500"
           >
             <option value="all">Todos los roles</option>
+            <option value="SUPER_ADMIN">Super Admin</option>
             <option value="ADMIN">Administradores</option>
             <option value="TEACHER">Profesores</option>
             <option value="STUDENT">Estudiantes</option>
@@ -492,7 +495,7 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${user.role === 'ADMIN' ? 'from-red-500 to-orange-500' : user.role === 'TEACHER' ? 'from-purple-500 to-pink-500' : 'from-blue-500 to-cyan-500'} flex items-center justify-center text-white font-medium`}>
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${user.role === 'SUPER_ADMIN' ? 'from-amber-500 to-yellow-600' : user.role === 'ADMIN' ? 'from-red-500 to-orange-500' : user.role === 'TEACHER' ? 'from-purple-500 to-pink-500' : 'from-blue-500 to-cyan-500'} flex items-center justify-center text-white font-medium`}>
                           {user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                         <div>
@@ -509,16 +512,22 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <RoleIcon className={`w-4 h-4 ${roleBadge.color}`} />
-                        <select
-                          value={user.role}
-                          onChange={(e) => handleUserAction(user.id, `make_${e.target.value.toLowerCase()}`)}
-                          disabled={actionLoading === user.id}
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${roleBadge.class} cursor-pointer disabled:opacity-50`}
-                        >
-                          <option value="STUDENT">Estudiante</option>
-                          <option value="TEACHER">Profesor</option>
-                          <option value="ADMIN">Administrador</option>
-                        </select>
+                        {user.role === 'SUPER_ADMIN' ? (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${roleBadge.class}`}>
+                            Super Admin
+                          </span>
+                        ) : (
+                          <select
+                            value={user.role}
+                            onChange={(e) => handleUserAction(user.id, `make_${e.target.value.toLowerCase()}`)}
+                            disabled={actionLoading === user.id}
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${roleBadge.class} cursor-pointer disabled:opacity-50`}
+                          >
+                            <option value="STUDENT">Estudiante</option>
+                            <option value="TEACHER">Profesor</option>
+                            <option value="ADMIN">Administrador</option>
+                          </select>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4">
