@@ -1,90 +1,48 @@
-import { getServerSession } from 'next-auth';
+import { getServerSession, type Session } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
-import {
-  isAdminRole,
-  isSuperAdmin,
-  isTeacherOrAbove,
-  type Role,
-} from '@/lib/roles';
+import { can, hasRole, ROLES, type Permission, type Role } from '@/lib/roles';
 
 export type AuthUser = {
   id: string;
   email?: string | null;
   name?: string | null;
-  role: Role | string;
+  role: Role;
 };
 
 export type GuardResult =
-  | { ok: true; user: AuthUser; session: Awaited<ReturnType<typeof getServerSession>> }
+  | { ok: true; user: AuthUser; session: Session }
   | { ok: false; response: NextResponse };
 
-async function getAuthUser(): Promise<{
-  session: Awaited<ReturnType<typeof getServerSession>>;
-  user: AuthUser | null;
-}> {
+/** Usuario autenticado actual (o null). Nunca usa el email como id. */
+export async function getAuthUser(): Promise<{ session: Session; user: AuthUser } | null> {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return { session, user: null };
-  }
-
-  const user = session.user as AuthUser;
-  if (!user.id || !user.role) {
-    return { session, user: null };
-  }
-
-  return { session, user };
+  const u = session?.user;
+  if (!session || !u?.id || !u.role) return null;
+  return { session, user: { id: u.id, email: u.email, name: u.name, role: u.role as Role } };
 }
+
+const unauthorized = () => NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+const forbidden = () => NextResponse.json({ error: 'Prohibido' }, { status: 403 });
 
 export async function requireAuth(): Promise<GuardResult> {
-  const { session, user } = await getAuthUser();
-  if (!user) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: 'No autorizado' }, { status: 401 }),
-    };
-  }
-  return { ok: true, user, session };
+  const auth = await getAuthUser();
+  if (!auth) return { ok: false, response: unauthorized() };
+  return { ok: true, ...auth };
 }
 
-export async function requireAdmin(): Promise<GuardResult> {
-  const result = await requireAuth();
-  if (!result.ok) return result;
-
-  if (!isAdminRole(result.user.role)) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: 'Prohibido' }, { status: 403 }),
-    };
-  }
-
-  return result;
+export async function requireRole(min: Role): Promise<GuardResult> {
+  const r = await requireAuth();
+  if (!r.ok) return r;
+  return hasRole(r.user.role, min) ? r : { ok: false, response: forbidden() };
 }
 
-export async function requireSuperAdmin(): Promise<GuardResult> {
-  const result = await requireAuth();
-  if (!result.ok) return result;
-
-  if (!isSuperAdmin(result.user.role)) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: 'Prohibido' }, { status: 403 }),
-    };
-  }
-
-  return result;
+export async function requirePermission(permission: Permission): Promise<GuardResult> {
+  const r = await requireAuth();
+  if (!r.ok) return r;
+  return can(r.user.role, permission) ? r : { ok: false, response: forbidden() };
 }
 
-export async function requireTeacher(): Promise<GuardResult> {
-  const result = await requireAuth();
-  if (!result.ok) return result;
-
-  if (!isTeacherOrAbove(result.user.role)) {
-    return {
-      ok: false,
-      response: NextResponse.json({ error: 'Prohibido' }, { status: 403 }),
-    };
-  }
-
-  return result;
-}
+export const requireTeacher = () => requireRole(ROLES.TEACHER);
+export const requireAdmin = () => requireRole(ROLES.ADMIN);
+export const requireSuperAdmin = () => requireRole(ROLES.SUPER_ADMIN);

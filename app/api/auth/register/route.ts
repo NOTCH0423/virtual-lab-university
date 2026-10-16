@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, validatePasswordStrength } from '@/lib/password';
-import { createUserSession } from '@/lib/session-token';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { ROLES } from '@/lib/roles';
 
@@ -97,8 +96,6 @@ export async function POST(request: NextRequest) {
       })
       .catch(() => undefined);
 
-    const session = await createUserSession(user.id);
-
     return NextResponse.json({
       success: true,
       user: {
@@ -109,8 +106,6 @@ export async function POST(request: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName,
       },
-      token: session.token,
-      expiresAt: session.expiresAt.toISOString(),
     });
   } catch (error) {
     console.error('Register error:', error);

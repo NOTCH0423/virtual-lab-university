@@ -176,6 +176,9 @@ export default function TeacherPage() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold">Panel del Profesor</h1>
+              <Link href="/teacher/grades" className="px-3 py-1 rounded-full text-xs font-medium bg-primary-500/20 text-primary-300 hover:bg-primary-500/30">
+                Gestión de notas →
+              </Link>
               <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
                 connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' :
                 connectionStatus === 'updating' ? 'bg-yellow-500/20 text-yellow-400' :

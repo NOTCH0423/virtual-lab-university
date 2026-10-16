@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-guards';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const auth = await requireAuth();
+    if (!auth.ok) return auth.response;
+    const userId = auth.user.id;
     const body = await request.json();
     const { experimentId, laboratoryId, score, data, completed, timeSpent } = body;
 

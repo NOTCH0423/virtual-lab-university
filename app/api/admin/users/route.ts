@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth-guards';
-import { ROLES } from '@/lib/roles';
+import { ROLES, canManageUser } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,8 +113,8 @@ export async function POST(request: NextRequest) {
 
     await prisma.user.updateMany({
       where: {
-        id: { in: userIds },
-        role: { not: ROLES.SUPER_ADMIN },
+        id: { in: userIds.filter((id: unknown) => typeof id === 'string' && id !== auth.user.id) },
+        role: { in: canManageUser(auth.user.role, ROLES.ADMIN) ? [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT] : [ROLES.TEACHER, ROLES.STUDENT] },
       },
       data: updateData,
     });

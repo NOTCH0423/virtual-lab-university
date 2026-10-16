@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { requireAdmin, requireSuperAdmin } from '@/lib/auth-guards';
+import { requireAdmin } from '@/lib/auth-guards';
 import { hashPassword, validatePasswordStrength } from '@/lib/password';
-import { ROLES } from '@/lib/roles';
+import { ROLES, canAssignRole } from '@/lib/roles';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,12 +15,13 @@ export async function POST(request: Request) {
     const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
     const role = body.role === ROLES.ADMIN ? ROLES.ADMIN : ROLES.TEACHER;
 
-    if (role === ROLES.ADMIN) {
-      const auth = await requireSuperAdmin();
-      if (!auth.ok) return auth.response;
-    } else {
-      const auth = await requireAdmin();
-      if (!auth.ok) return auth.response;
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+    if (!canAssignRole(auth.user.role, role)) {
+      return NextResponse.json(
+        { message: 'Solo un superadministrador puede crear administradores' },
+        { status: 403 }
+      );
     }
 
     if (!email || !password || !firstName || !lastName) {

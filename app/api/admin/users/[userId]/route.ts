@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth-guards';
-import { isSuperAdmin, ROLES, canManageRole } from '@/lib/roles';
+import { ROLES, canAssignRole, canManageUser, isSuperAdmin } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,16 +66,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (isSuperAdmin(target.role) && !isSuperAdmin(auth.user.role)) {
+    const isSelf = target.id === auth.user.id;
+    if (!isSelf && !canManageUser(auth.user.role, target.role)) {
       return NextResponse.json(
-        { error: 'No puedes modificar al superusuario' },
-        { status: 403 }
-      );
-    }
-
-    if (isSuperAdmin(target.role) && params.userId !== auth.user.id) {
-      return NextResponse.json(
-        { error: 'El superusuario no puede ser modificado por otros' },
+        { error: 'No tienes permiso para modificar a este usuario' },
         { status: 403 }
       );
     }
@@ -84,22 +78,13 @@ export async function PATCH(
     const { role, status, name, email, university, career, bio } = body;
     const updateData: Record<string, unknown> = {};
 
-    if (role !== undefined) {
-      if (role === ROLES.SUPER_ADMIN && !isSuperAdmin(auth.user.role)) {
-        return NextResponse.json(
-          { error: 'Solo un superusuario puede asignar ese rol' },
-          { status: 403 }
-        );
+    if (role !== undefined && role !== target.role) {
+      if (isSelf) {
+        return NextResponse.json({ error: 'No puedes cambiar tu propio rol' }, { status: 403 });
       }
-      if (!canManageRole(auth.user.role, role) && role !== target.role) {
+      if (!canAssignRole(auth.user.role, role)) {
         return NextResponse.json(
-          { error: 'No tienes permiso para asignar ese rol' },
-          { status: 403 }
-        );
-      }
-      if (isSuperAdmin(target.role) && role !== ROLES.SUPER_ADMIN) {
-        return NextResponse.json(
-          { error: 'No se puede degradar al superusuario' },
+          { error: 'Solo un superadministrador puede asignar roles ADMIN o SUPER_ADMIN' },
           { status: 403 }
         );
       }
@@ -107,11 +92,8 @@ export async function PATCH(
     }
 
     if (status !== undefined) {
-      if (isSuperAdmin(target.role) && status !== 'ACTIVE') {
-        return NextResponse.json(
-          { error: 'No se puede suspender o banear al superusuario' },
-          { status: 403 }
-        );
+      if (isSelf || isSuperAdmin(target.role)) {
+        return NextResponse.json({ error: 'No se puede cambiar el estado de esta cuenta' }, { status: 403 });
       }
       updateData.status = status;
     }
@@ -157,9 +139,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (isSuperAdmin(userToDelete.role)) {
+    if (!canManageUser(auth.user.role, userToDelete.role)) {
       return NextResponse.json(
-        { error: 'No se puede eliminar al superusuario' },
+        { error: 'No tienes permiso para eliminar a este usuario' },
         { status: 403 }
       );
     }

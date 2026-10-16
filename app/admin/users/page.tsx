@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { can, canManageUser } from '@/lib/roles';
 import { 
   Users, Search, Eye, Trash2, 
   Ban, CheckCircle, AlertTriangle,
@@ -27,6 +28,8 @@ interface User {
 
 export default function AdminUsersPage() {
   const { data: session } = useSession();
+  const actorRole = session?.user?.role;
+  const canManageAdmins = can(actorRole, 'admins:manage');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -512,9 +515,9 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <RoleIcon className={`w-4 h-4 ${roleBadge.color}`} />
-                        {user.role === 'SUPER_ADMIN' ? (
+                        {!canManageUser(actorRole, user.role) || user.id === session?.user?.id ? (
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${roleBadge.class}`}>
-                            Super Admin
+                            {user.role === 'SUPER_ADMIN' ? 'Super Admin' : user.role === 'ADMIN' ? 'Administrador' : user.role === 'TEACHER' ? 'Profesor' : 'Estudiante'}
                           </span>
                         ) : (
                           <select
@@ -525,7 +528,7 @@ export default function AdminUsersPage() {
                           >
                             <option value="STUDENT">Estudiante</option>
                             <option value="TEACHER">Profesor</option>
-                            <option value="ADMIN">Administrador</option>
+                            {canManageAdmins && <option value="ADMIN">Administrador</option>}
                           </select>
                         )}
                       </div>
@@ -810,7 +813,7 @@ export default function AdminUsersPage() {
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl focus:outline-none focus:border-primary-500"
                 >
                   <option value="TEACHER">Profesor</option>
-                  <option value="ADMIN">Administrador</option>
+                  {canManageAdmins && <option value="ADMIN">Administrador</option>}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">

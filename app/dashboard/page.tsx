@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import MyGrades from '@/components/MyGrades';
 import {
   BookOpen,
   Clock,
@@ -487,6 +488,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+        <MyGrades />
       </main>
     </div>
   );
