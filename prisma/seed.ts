@@ -22,186 +22,34 @@ async function main() {
   console.log('🗑️  Cleaned existing data');
 
   // ============================================
-  // USERS - 15 estudiantes reales de universidades
+  // USERS - solo superusuario (sin credenciales débiles de demo)
   // ============================================
-  const hashedPasswords = {
-    admin: await bcrypt.hash('admin123', 10),
-    demo: await bcrypt.hash('demo123', 10),
-    teacher: await bcrypt.hash('profesor123', 10),
-    student1: await bcrypt.hash('maria2024', 10),
-    student2: await bcrypt.hash('carlos2024', 10),
-    student3: await bcrypt.hash('laura2024', 10),
-    student4: await bcrypt.hash('juan2024', 10),
-    student5: await bcrypt.hash('sofia2024', 10),
-    student6: await bcrypt.hash('pedro2024', 10),
-    student7: await bcrypt.hash('ana2024', 10),
-    student8: await bcrypt.hash('luis2024', 10),
-  };
+  const superEmail = process.env.SUPER_ADMIN_EMAIL?.trim().toLowerCase();
+  const superPassword = process.env.SUPER_ADMIN_PASSWORD?.trim();
+  const superName = process.env.SUPER_ADMIN_NAME?.trim() || 'Super Admin';
 
-  // Admin
+  if (!superEmail || !superPassword) {
+    throw new Error(
+      'Define SUPER_ADMIN_EMAIL y SUPER_ADMIN_PASSWORD para el seed. No se crean usuarios demo.'
+    );
+  }
+
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@virtuallab.edu',
-      password: hashedPasswords.admin,
-      name: 'Administrador del Sistema',
-      firstName: 'Admin',
-      lastName: 'System',
-      role: 'ADMIN',
+      email: superEmail,
+      password: await bcrypt.hash(superPassword, 12),
+      name: superName,
+      firstName: superName.split(' ')[0] || 'Super',
+      lastName: superName.split(' ').slice(1).join(' ') || 'Admin',
+      role: 'SUPER_ADMIN',
       status: 'ACTIVE',
       university: 'Virtual Lab University',
-      bio: 'Administrador principal del sistema Virtual Lab University',
+      bio: 'Superusuario propietario del sistema',
+      emailVerified: new Date(),
     },
   });
 
-  // Teacher
-  const teacher = await prisma.user.create({
-    data: {
-      email: 'profesor@virtuallab.edu',
-      password: hashedPasswords.teacher,
-      name: 'Dr. Roberto Silva Pérez',
-      firstName: 'Roberto',
-      lastName: 'Silva Pérez',
-      role: 'TEACHER',
-      status: 'ACTIVE',
-      university: 'Universidad Nacional de Ingeniería',
-      career: 'Ciencias Físicas',
-      bio: 'Doctor en Física por la Universidad de Madrid. 15 años de experiencia en educación universitaria.',
-    },
-  });
-
-  // Demo student
-  const demoUser = await prisma.user.create({
-    data: {
-      email: 'demo@virtuallab.edu',
-      password: hashedPasswords.demo,
-      name: 'Usuario Demo',
-      firstName: 'Demo',
-      lastName: 'User',
-      role: 'STUDENT',
-      status: 'ACTIVE',
-      university: 'Universidad Virtual Demo',
-      career: 'Ingeniería de Sistemas',
-    },
-  });
-
-  // Real students
-  const students = await Promise.all([
-    prisma.user.create({
-      data: {
-        email: 'maria.garcia@uni.edu.pe',
-        password: hashedPasswords.student1,
-        name: 'María García López',
-        firstName: 'María',
-        lastName: 'García López',
-        role: 'STUDENT',
-        status: 'ACTIVE',
-        university: 'Universidad Nacional Mayor de San Marcos',
-        career: 'Química',
-        lastActiveAt: new Date(),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'carlos.lopez@uni.edu.pe',
-        password: hashedPasswords.student2,
-        name: 'Carlos López Martínez',
-        firstName: 'Carlos',
-        lastName: 'López Martínez',
-        role: 'STUDENT',
-        status: 'ACTIVE',
-        university: 'Universidad Peruana Cayetano Heredia',
-        career: 'Física',
-        lastActiveAt: new Date(Date.now() - 3600000),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'laura.torres@uni.edu.pe',
-        password: hashedPasswords.student3,
-        name: 'Laura Torres Rivera',
-        firstName: 'Laura',
-        lastName: 'Torres Rivera',
-        role: 'STUDENT',
-        status: 'ACTIVE',
-        university: 'Universidad Nacional de Ingeniería',
-        career: 'Ingeniería Electrónica',
-        lastActiveAt: new Date(Date.now() - 7200000),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'juan.perez@uni.edu.pe',
-        password: hashedPasswords.student4,
-        name: 'Juan Pérez Sánchez',
-        firstName: 'Juan',
-        lastName: 'Pérez Sánchez',
-        role: 'STUDENT',
-        status: 'ACTIVE',
-        university: 'Universidad de Lima',
-        career: 'Biología',
-        lastActiveAt: new Date(Date.now() - 86400000),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'sofia.rodriguez@uni.edu.pe',
-        password: hashedPasswords.student5,
-        name: 'Sofía Rodríguez Castro',
-        firstName: 'Sofía',
-        lastName: 'Rodríguez Castro',
-        role: 'STUDENT',
-        status: 'ACTIVE',
-        university: 'Universidad Nacional Mayor de San Marcos',
-        career: 'Medicina',
-        lastActiveAt: new Date(Date.now() - 172800000),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'pedro.sanchez@uni.edu.pe',
-        password: hashedPasswords.student6,
-        name: 'Pedro Sánchez Morales',
-        firstName: 'Pedro',
-        lastName: 'Sánchez Morales',
-        role: 'STUDENT',
-        status: 'SUSPENDED',
-        university: 'Universidad Nacional de San Agustín',
-        career: 'Ingeniería Mecánica',
-        lastActiveAt: new Date(Date.now() - 604800000),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'ana.martinez@uni.edu.pe',
-        password: hashedPasswords.student7,
-        name: 'Ana Martínez Fernández',
-        firstName: 'Ana',
-        lastName: 'Martínez Fernández',
-        role: 'STUDENT',
-        status: 'ACTIVE',
-        university: 'Universidad de San Martín de Porres',
-        career: 'Farmacia',
-        lastActiveAt: new Date(Date.now() - 259200000),
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'luis.ramirez@uni.edu.pe',
-        password: hashedPasswords.student8,
-        name: 'Luis Ramírez Vega',
-        firstName: 'Luis',
-        lastName: 'Ramírez Vega',
-        role: 'STUDENT',
-        status: 'BANNED',
-        university: 'Universidad Católica San Pablo',
-        career: 'Ingeniería Civil',
-        lastActiveAt: new Date(Date.now() - 1209600000),
-      },
-    }),
-  ]);
-
-  const allUsers = [admin, teacher, demoUser, ...students];
-  console.log(`✅ Created ${allUsers.length} users`);
+  console.log(`✅ Created SUPER_ADMIN: ${admin.email}`);
 
   // ============================================
   // LABORATORIES - 8 laboratorios reales
@@ -737,125 +585,17 @@ async function main() {
   console.log(`✅ Created ${achievements.length} achievements`);
 
   // ============================================
-  // USER PROGRESS - Tracking
-  // ============================================
-  const demoProgress = await prisma.userProgress.create({
-    data: {
-      userId: demoUser.id,
-      laboratoryId: mechanicsLab.id,
-      completed: true,
-      progress: 100,
-      score: 85,
-      timeSpent: 1800,
-      attempts: 2,
-      completedAt: new Date(),
-    },
-  });
-
-  const mariaProgress = await prisma.userProgress.create({
-    data: {
-      userId: students[0].id,
-      laboratoryId: chemistryLab.id,
-      completed: true,
-      progress: 100,
-      score: 92,
-      timeSpent: 2100,
-      attempts: 1,
-      completedAt: new Date(Date.now() - 86400000),
-    },
-  });
-
-  await prisma.userProgress.create({
-    data: {
-      userId: students[1].id,
-      laboratoryId: mechanicsLab.id,
-      completed: false,
-      progress: 60,
-      score: null,
-      timeSpent: 900,
-      attempts: 1,
-    },
-  });
-
-  await prisma.userProgress.create({
-    data: {
-      userId: students[2].id,
-      laboratoryId: circuitsLab.id,
-      completed: true,
-      progress: 100,
-      score: 78,
-      timeSpent: 2400,
-      attempts: 3,
-      completedAt: new Date(Date.now() - 172800000),
-    },
-  });
-  console.log('✅ Created user progress records');
-
-  // ============================================
-  // CERTIFICATES
-  // ============================================
-  await prisma.certificate.create({
-    data: {
-      userId: demoUser.id,
-      laboratoryId: mechanicsLab.id,
-      title: 'Certificado de Mecánica Clásica',
-      description: 'Completó todos los experimentos del laboratorio de Mecánica Clásica',
-      score: 85,
-    },
-  });
-
-  await prisma.certificate.create({
-    data: {
-      userId: students[0].id,
-      laboratoryId: chemistryLab.id,
-      title: 'Certificado de Química General',
-      description: 'Completó todos los experimentos del laboratorio de Química General',
-      score: 92,
-    },
-  });
-  console.log('✅ Created certificates');
-
-  // ============================================
-  // USER ACHIEVEMENTS
-  // ============================================
-  await prisma.userAchievement.create({
-    data: {
-      userId: demoUser.id,
-      achievementId: achievements[0].id,
-    },
-  });
-  await prisma.userAchievement.create({
-    data: {
-      userId: demoUser.id,
-      achievementId: achievements[1].id,
-    },
-  });
-  await prisma.userAchievement.create({
-    data: {
-      userId: students[0].id,
-      achievementId: achievements[0].id,
-    },
-  });
-  await prisma.userAchievement.create({
-    data: {
-      userId: students[0].id,
-      achievementId: achievements[4].id,
-    },
-  });
-  console.log('✅ Created user achievements');
-
-  // ============================================
   // SYSTEM STATS
   // ============================================
   await prisma.systemStats.create({
     data: {
       id: 'global-stats',
-      totalUsers: 15,
-      activeUsers: 12,
-      totalExperiments: 16,
-      experimentsCompleted: 47,
-      totalHours: 156.5,
-      certificates: 2,
+      totalUsers: 1,
+      activeUsers: 1,
+      totalExperiments: experiments.length,
+      experimentsCompleted: 0,
+      totalHours: 0,
+      certificates: 0,
     },
   });
   console.log('✅ Created system stats');
@@ -947,13 +687,7 @@ async function main() {
   console.log('═══════════════════════════════════════════');
   console.log('🎉 Seed completado exitosamente!');
   console.log('═══════════════════════════════════════════');
-  console.log('');
-  console.log('📋 Credenciales de prueba:');
-  console.log('');
-  console.log('  ADMIN:    admin@virtuallab.edu    / admin123');
-  console.log('  TEACHER:  profesor@virtuallab.edu / profesor123');
-  console.log('  DEMO:     demo@virtuallab.edu    / demo123');
-  console.log('  STUDENT:  maria.garcia@uni.edu.pe / maria2024');
+  console.log(`SUPER_ADMIN: ${admin.email}`);
   console.log('');
 }
 

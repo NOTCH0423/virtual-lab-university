@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-guards';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const auth = await requireAuth();
+    if (!auth.ok) return auth.response;
 
-    const userId = (session.user as any)?.id;
+    const userId = auth.user.id;
 
     const [user, userProgress, achievements, certificates, labs, experiments] = await Promise.all([
       prisma.user.findUnique({

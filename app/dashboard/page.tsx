@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import MyGrades from '@/components/MyGrades';
 import {
   BookOpen,
   Clock,
@@ -105,7 +106,6 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setConnectionStatus('updating');
-      setLoading(true);
       
       const userRes = await fetch('/api/auth/me');
 
@@ -153,8 +153,21 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session || !userData) {
+  if (!session) {
     return null;
+  }
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen bg-slate-950">
+        <Navigation />
+        <main className="pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold mb-2">Hola, {session.user?.name || 'estudiante'}</h1>
+          <p className="text-gray-400">No se pudieron cargar tus estadísticas en este momento. Reintentaremos automáticamente.</p>
+          <MyGrades />
+        </main>
+      </div>
+    );
   }
 
   const firstName = userData.user?.firstName || userData.user?.name?.split(' ')[0] || 'Usuario';
@@ -487,6 +500,7 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+        <MyGrades />
       </main>
     </div>
   );

@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/auth-guards';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const auth = await requireAuth();
+    if (!auth.ok) return auth.response;
+    const userId = auth.user.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -43,13 +38,9 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const auth = await requireAuth();
+    if (!auth.ok) return auth.response;
+    const userId = auth.user.id;
     const body = await request.json();
 
     const updateData: any = {};
@@ -87,13 +78,9 @@ export async function PATCH(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id || session.user.email;
+    const auth = await requireAuth();
+    if (!auth.ok) return auth.response;
+    const userId = auth.user.id;
     const body = await request.json();
     const { currentPassword, newPassword } = body;
 

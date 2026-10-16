@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { staticLabDetail } from '@/lib/static-labs';
 import {
   ArrowLeft,
   Clock,
@@ -75,9 +76,12 @@ export default function LaboratoryDetailPage() {
       if (res.ok) {
         const data = await res.json();
         setLabData(data);
+      } else {
+        setLabData(staticLabDetail(String(params.id)));
       }
     } catch (error) {
       console.error('Error fetching laboratory:', error);
+      setLabData(staticLabDetail(String(params.id)));
     } finally {
       setLoading(false);
     }

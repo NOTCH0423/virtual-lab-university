@@ -1,29 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-guards';
+import { ROLES, canManageUser } from '@/lib/roles';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || 'all';
     const status = searchParams.get('status') || 'all';
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -58,22 +55,22 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const usersWithProgress = users.map(user => ({
+    const usersWithProgress = users.map((user) => ({
       ...user,
       progress: 0,
-      lastActive: user.lastActiveAt 
-        ? new Date(user.lastActiveAt).toLocaleDateString('es-ES', { 
-            day: '2-digit', 
-            month: '2-digit', 
+      lastActive: user.lastActiveAt
+        ? new Date(user.lastActiveAt).toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
           })
         : 'Nunca',
       createdAt: user.createdAt.toLocaleDateString('es-ES', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
       }),
       achievementsCount: user._count.achievements,
       certificatesCount: user._count.certificates,
@@ -88,11 +85,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const body = await request.json();
     const { action, userIds } = body;
@@ -101,7 +95,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    let updateData: any = {};
+    let updateData: { status: string } | null = null;
 
     switch (action) {
       case 'suspend':
@@ -118,7 +112,10 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.user.updateMany({
-      where: { id: { in: userIds } },
+      where: {
+        id: { in: userIds.filter((id: unknown) => typeof id === 'string' && id !== auth.user.id) },
+        role: { in: canManageUser(auth.user.role, ROLES.ADMIN) ? [ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT] : [ROLES.TEACHER, ROLES.STUDENT] },
+      },
       data: updateData,
     });
 
