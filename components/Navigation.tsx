@@ -45,7 +45,13 @@ export default function Navigation() {
   const pathname = usePathname();
   const { data: session } = useSession();
   
-  const userRole = (session?.user as any)?.role || 'STUDENT';
+  const rawRole = String((session?.user as any)?.role || 'STUDENT').toUpperCase();
+  const isAdmin = rawRole === 'ADMIN' || rawRole === 'SUPER_ADMIN';
+  const userRole = isAdmin ? 'ADMIN' : rawRole;
+  const roleLabel =
+    rawRole === 'SUPER_ADMIN' ? 'Super Administrador' :
+    rawRole === 'ADMIN' ? 'Administrador' :
+    rawRole === 'TEACHER' ? 'Profesor' : 'Estudiante';
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
@@ -133,7 +139,7 @@ export default function Navigation() {
               <div className="text-sm">
                 <p className="font-medium text-white">{session?.user?.name || 'Usuario'}</p>
                 <p className="text-xs text-gray-400">
-                  {userRole === 'ADMIN' ? 'Administrador' : userRole === 'TEACHER' ? 'Profesor' : 'Estudiante'}
+                  {roleLabel}
                 </p>
               </div>
             </div>

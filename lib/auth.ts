@@ -57,12 +57,38 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
       }
+      // Refrescar rol/nombre/email desde la BD para que los cambios
+      // (p.ej. promoción a SUPER_ADMIN o edición en /settings) se reflejen
+      // sin tener que cerrar sesión.
+      try {
+        const where = token.id
+          ? { id: token.id as string }
+          : token.email
+          ? { email: token.email }
+          : null;
+        if (where) {
+          const dbUser = await prisma.user.findUnique({
+            where: where as any,
+            select: { id: true, role: true, name: true, email: true },
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.role = dbUser.role;
+            token.name = dbUser.name;
+            token.email = dbUser.email;
+          }
+        }
+      } catch (e) {
+        console.error('jwt refresh error', e);
+      }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        session.user.name = (token.name as string) ?? session.user.name;
+        session.user.email = (token.email as string) ?? session.user.email;
       }
       return session;
     },

@@ -111,3 +111,27 @@ a {
 canvas {
   touch-action: none;
 }
+
+/* ===== Preferencias de apariencia (/settings) ===== */
+/* Tema claro: la UI está diseñada en oscuro; se invierte globalmente y se
+   re-invierten medios para que imágenes/vídeos/3D conserven sus colores. */
+html.light {
+  filter: invert(1) hue-rotate(180deg);
+  background: #fff;
+}
+html.light img,
+html.light video,
+html.light canvas,
+html.light iframe,
+html.light picture {
+  filter: invert(1) hue-rotate(180deg);
+}
+/* Desactivar animaciones/transiciones */
+html.no-animations *,
+html.no-animations *::before,
+html.no-animations *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
