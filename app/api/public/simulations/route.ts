@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const experiments = await prisma.experiment.findMany({
+      where: { status: 'PUBLISHED' },
       include: {
         laboratory: { select: { title: true, slug: true } },
         _count: { select: { results: true } },

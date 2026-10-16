@@ -1,130 +1,97 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/lib/admin';
+import { EMAIL_RE, STATUSES, canAssignRole, canManage, isValidRole } from '@/lib/admin-users';
 
 export const dynamic = 'force-dynamic';
 
+const select = {
+  id: true, email: true, name: true, role: true, status: true, university: true, career: true,
+  createdAt: true, updatedAt: true, lastActiveAt: true,
+  _count: { select: { achievements: true, certificates: true, progress: true } },
+} as const;
+
 export async function GET(request: NextRequest) {
+  const { error } = await requireAdmin();
+  if (error) return error;
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search') || '';
-    const role = searchParams.get('role') || 'all';
-    const status = searchParams.get('status') || 'all';
-
+    const sp = request.nextUrl.searchParams;
+    const search = (sp.get('search') || '').trim();
+    const role = sp.get('role') || 'all';
+    const status = sp.get('status') || 'all';
     const where: any = {};
-
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
+    if (role !== 'all') where.role = role;
+    if (status !== 'all') where.status = status;
 
-    if (role !== 'all') {
-      where.role = role;
-    }
-
-    if (status !== 'all') {
-      where.status = status;
-    }
-
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        status: true,
-        university: true,
-        career: true,
-        createdAt: true,
-        updatedAt: true,
-        lastActiveAt: true,
-        _count: {
-          select: {
-            achievements: true,
-            certificates: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const usersWithProgress = users.map(user => ({
-      ...user,
-      progress: 0,
-      lastActive: user.lastActiveAt 
-        ? new Date(user.lastActiveAt).toLocaleDateString('es-ES', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        : 'Nunca',
-      createdAt: user.createdAt.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      }),
-      achievementsCount: user._count.achievements,
-      certificatesCount: user._count.certificates,
-    }));
-
-    return NextResponse.json(usersWithProgress);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const users = await prisma.user.findMany({ where, select, orderBy: { createdAt: 'desc' } });
+    return NextResponse.json(
+      users.map((u) => ({
+        ...u,
+        achievementsCount: u._count.achievements,
+        certificatesCount: u._count.certificates,
+        progressCount: u._count.progress,
+      }))
+    );
+  } catch (err) {
+    console.error('admin users GET', err);
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
 }
 
+/**
+ * POST { name, email, password, role }            -> crear usuario
+ * POST { action: 'activate'|'suspend'|'ban', userIds } -> acción masiva de estado
+ */
 export async function POST(request: NextRequest) {
+  const { admin, error } = await requireAdmin();
+  if (error) return error;
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await request.json().catch(() => ({}));
+
+    if (body.action) {
+      const map: Record<string, string> = { activate: 'ACTIVE', suspend: 'SUSPENDED', ban: 'BANNED' };
+      const status = map[body.action];
+      if (!status || !Array.isArray(body.userIds)) {
+        return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 });
+      }
+      const targets = await prisma.user.findMany({
+        where: { id: { in: body.userIds.map(String) } },
+        select: { id: true, role: true },
+      });
+      const allowed = targets.filter((t) => t.id !== admin!.id && canManage(admin!, t)).map((t) => t.id);
+      const r = await prisma.user.updateMany({ where: { id: { in: allowed } }, data: { status } });
+      return NextResponse.json({ success: true, updated: r.count, skipped: body.userIds.length - r.count });
     }
 
-    const body = await request.json();
-    const { action, userIds } = body;
-
-    if (!action || !userIds || !Array.isArray(userIds)) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    const name = String(body.name || '').trim();
+    const email = String(body.email || '').trim().toLowerCase();
+    const password = String(body.password || '');
+    const role = String(body.role || 'STUDENT').toUpperCase();
+    if (name.length < 2) return NextResponse.json({ error: 'El nombre es obligatorio (mín. 2 caracteres)' }, { status: 400 });
+    if (!EMAIL_RE.test(email)) return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
+    if (password.length < 8) return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 });
+    if (!isValidRole(role)) return NextResponse.json({ error: 'Rol inválido' }, { status: 400 });
+    if (!canAssignRole(admin!, role)) {
+      return NextResponse.json({ error: 'Solo un SUPER_ADMIN puede crear administradores' }, { status: 403 });
     }
-
-    let updateData: any = {};
-
-    switch (action) {
-      case 'suspend':
-        updateData = { status: 'SUSPENDED' };
-        break;
-      case 'activate':
-        updateData = { status: 'ACTIVE' };
-        break;
-      case 'ban':
-        updateData = { status: 'BANNED' };
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
+      return NextResponse.json({ error: 'Ya existe un usuario con ese email' }, { status: 409 });
     }
-
-    await prisma.user.updateMany({
-      where: { id: { in: userIds } },
-      data: updateData,
+    const status = STATUSES.includes(body.status) ? body.status : 'ACTIVE';
+    const user = await prisma.user.create({
+      data: { name, email, password: await bcrypt.hash(password, 10), role, status },
+      select,
     });
-
-    return NextResponse.json({ success: true, message: `Users ${action}d successfully` });
-  } catch (error) {
-    console.error('Error performing bulk action:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(user, { status: 201 });
+  } catch (err) {
+    console.error('admin users POST', err);
+    return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
 }

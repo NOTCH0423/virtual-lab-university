@@ -79,6 +79,7 @@ a {
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
+    pointer-events: none;
   }
   
   .glow-primary {
@@ -110,4 +111,39 @@ a {
 
 canvas {
   touch-action: none;
+}
+
+/* ===== Preferencias de apariencia (/settings) ===== */
+/* Tema claro: la UI está diseñada en oscuro; se invierte globalmente y se
+   re-invierten medios para que imágenes/vídeos/3D conserven sus colores. */
+html.light {
+  filter: invert(1) hue-rotate(180deg);
+  background: #fff;
+}
+html.light img,
+html.light video,
+html.light canvas,
+html.light iframe,
+html.light picture {
+  filter: invert(1) hue-rotate(180deg);
+}
+/* Desactivar animaciones/transiciones */
+html.no-animations *,
+html.no-animations *::before,
+html.no-animations *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ===== Impresión (Notas) ===== */
+@media print {
+  .no-print, [role='status'] { display: none !important; }
+  html, body, .bg-slate-950 { background: #fff !important; color: #000 !important; filter: none !important; }
+  .print-area, .print-area * { color: #000 !important; background: transparent !important; border-color: #999 !important; }
+  .print-area .text-red-500 { color: #c00 !important; }
+  .print-area table { border-collapse: collapse; }
+  .print-area td, .print-area th { border: 1px solid #999 !important; }
+  main { padding-top: 0 !important; }
 }

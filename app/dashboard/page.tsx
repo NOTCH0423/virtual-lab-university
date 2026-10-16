@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/client-auth';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import {

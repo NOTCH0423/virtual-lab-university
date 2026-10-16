@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import UserAvatar from '@/components/UserAvatar';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Beaker,
   LayoutDashboard,
@@ -20,19 +21,56 @@ import {
   Clock,
   RefreshCw,
   Bell,
+  Database,
+  ClipboardList,
+  Home,
+  UserCircle,
+  ArrowLeft,
   Wifi,
   WifiOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from '@/lib/client-auth';
+import { ToastProvider } from '@/components/admin/ui';
 
-const sidebarItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
-  { id: 'users', label: 'Usuarios', icon: Users, href: '/admin/users' },
-  { id: 'laboratories', label: 'Laboratorios', icon: FlaskConical, href: '/admin/laboratories' },
-  { id: 'courses', label: 'Cursos', icon: BookOpen, href: '/admin/courses' },
-  { id: 'analytics', label: 'Analíticas', icon: BarChart3, href: '/admin/analytics' },
-  { id: 'settings', label: 'Configuración', icon: Settings, href: '/admin/settings' },
+const siteLinks = [
+  { label: 'Volver al sitio', icon: Home, href: '/dashboard' },
+  { label: 'Laboratorios', icon: FlaskConical, href: '/laboratories' },
+  { label: 'Cursos', icon: BookOpen, href: '/courses' },
+  { label: 'Mi perfil', icon: UserCircle, href: '/profile' },
+];
+
+const sidebarGroups = [
+  {
+    title: 'General',
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+      { id: 'analytics', label: 'Analíticas', icon: BarChart3, href: '/admin/analytics' },
+    ],
+  },
+  {
+    title: 'Gestión',
+    items: [
+      { id: 'users', label: 'Usuarios', icon: Users, href: '/admin/users' },
+      { id: 'assignments', label: 'Asignaciones', icon: ClipboardList, href: '/admin/assignments' },
+      { id: 'notas', label: 'Notas', icon: Award, href: '/notas' },
+    ],
+  },
+  {
+    title: 'Contenido',
+    items: [
+      { id: 'laboratories', label: 'Laboratorios', icon: FlaskConical, href: '/admin/laboratories' },
+      { id: 'experiments', label: 'Experimentos', icon: Beaker, href: '/admin/experiments' },
+      { id: 'courses', label: 'Cursos', icon: BookOpen, href: '/admin/courses' },
+    ],
+  },
+  {
+    title: 'Sistema',
+    items: [
+      { id: 'settings', label: 'Configuración', icon: Settings, href: '/admin/settings' },
+      { id: 'database', label: 'Base de datos', icon: Database, href: '/admin/settings?tab=database' },
+    ],
+  },
 ];
 
 interface AdminStats {
@@ -75,6 +113,19 @@ export default function AdminLayout({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const [currentTab, setCurrentTab] = useState<string | null>(null);
+  useEffect(() => {
+    setCurrentTab(new URLSearchParams(window.location.search).get('tab'));
+  }, [pathname]);
+  const { data: session, status } = useSession();
+  const role = String((session?.user as any)?.role || '').toUpperCase();
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+
+  useEffect(() => {
+    if (status === 'unauthenticated') router.replace('/login');
+    else if (status === 'authenticated' && !isAdmin) router.replace('/dashboard');
+  }, [status, isAdmin, router]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -105,44 +156,41 @@ export default function AdminLayout({
   const [analyticsData, setAnalyticsData] = useState<AdminDashboardData | null>(null);
 
   useEffect(() => {
+    if (!isAdmin || pathname !== '/admin') return;
     fetchStats();
-    
-    const interval = setInterval(fetchStats, 10000);
+    const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
-  }, [fetchStats]);
+  }, [fetchStats, isAdmin, pathname]);
 
-  const statsData = stats ? [
-    { label: 'Total Usuarios', value: stats.totalUsers.toLocaleString(), change: '+12%', icon: Users, color: 'text-blue-400', bgColor: 'bg-blue-500/20', borderColor: 'border-blue-500/30' },
-    { label: 'Experimentos', value: stats.experimentsCompleted.toLocaleString(), change: '+8%', icon: FlaskConical, color: 'text-green-400', bgColor: 'bg-green-500/20', borderColor: 'border-green-500/30' },
-    { label: 'Horas Totales', value: stats.totalHours.toLocaleString(), change: '+15%', icon: Clock, color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/30' },
-    { label: 'Certificados', value: stats.certificates.toLocaleString(), change: '+5%', icon: Award, color: 'text-yellow-400', bgColor: 'bg-yellow-500/20', borderColor: 'border-yellow-500/30' },
-  ] : [
-    { label: 'Total Usuarios', value: '0', change: '+12%', icon: Users, color: 'text-blue-400', bgColor: 'bg-blue-500/20', borderColor: 'border-blue-500/30' },
-    { label: 'Experimentos', value: '0', change: '+8%', icon: FlaskConical, color: 'text-green-400', bgColor: 'bg-green-500/20', borderColor: 'border-green-500/30' },
-    { label: 'Horas Totales', value: '0', change: '+15%', icon: Clock, color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/30' },
-    { label: 'Certificados', value: '0', change: '+5%', icon: Award, color: 'text-yellow-400', bgColor: 'bg-yellow-500/20', borderColor: 'border-yellow-500/30' },
+  const growth = (stats as any)?.usersGrowth as string | undefined;
+  const statsData = [
+    { label: 'Total Usuarios', value: (stats?.totalUsers ?? 0).toLocaleString(), change: growth ? `${growth} nuevos/sem` : '', icon: Users, color: 'text-blue-400', bgColor: 'bg-blue-500/20', borderColor: 'border-blue-500/30' },
+    { label: 'Experimentos completados', value: (stats?.experimentsCompleted ?? 0).toLocaleString(), change: '', icon: FlaskConical, color: 'text-green-400', bgColor: 'bg-green-500/20', borderColor: 'border-green-500/30' },
+    { label: 'Horas Totales', value: (stats?.totalHours ?? 0).toLocaleString(), change: '', icon: Clock, color: 'text-purple-400', bgColor: 'bg-purple-500/20', borderColor: 'border-purple-500/30' },
+    { label: 'Certificados', value: (stats?.certificates ?? 0).toLocaleString(), change: '', icon: Award, color: 'text-yellow-400', bgColor: 'bg-yellow-500/20', borderColor: 'border-yellow-500/30' },
   ];
 
-  const topExperiments: TopExperiment[] = analyticsData?.topExperiments || [
-    { name: 'Mecánica Clásica', completions: stats?.experimentsCompleted || 0, rating: 4.9, growth: '+18%' },
-    { name: 'Química Orgánica', completions: Math.floor((stats?.experimentsCompleted || 0) * 0.8), rating: 4.8, growth: '+12%' },
-    { name: 'Biología Celular', completions: Math.floor((stats?.experimentsCompleted || 0) * 0.6), rating: 4.7, growth: '+8%' },
-  ];
-
-  const recentActivity: RecentActivity[] = analyticsData?.recentActivity || [
-    { id: 1, user: 'Admin', action: 'accede', item: 'Panel de Control', time: 'Ahora', avatar: 'AD' },
-    { id: 2, user: 'Profesor', action: 'actualizó', item: 'Laboratorio', time: 'Hace 1h', avatar: 'PR' },
-    { id: 3, user: 'Demo', action: 'completó', item: 'Experimento', time: 'Hace 2h', avatar: 'DE' },
-  ];
+  const topExperiments: TopExperiment[] = analyticsData?.topExperiments || [];
+  const recentActivity: RecentActivity[] = analyticsData?.recentActivity || [];
 
   const maxCompletions = Math.max(...topExperiments.map(e => e.completions), 1);
 
+  if (status !== 'authenticated' || !isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-gray-400">
+        {status === 'loading' ? 'Verificando permisos...' : 'Redirigiendo...'}
+      </div>
+    );
+  }
+
+
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-slate-950 flex">
       <aside className={`glass-dark border-r border-white/10 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           {!isCollapsed && (
-            <Link href="/admin" className="flex items-center gap-2">
+            <Link href="/dashboard" title="Ir al sitio" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
                 <Beaker className="w-6 h-6 text-white" />
               </div>
@@ -157,35 +205,70 @@ export default function AdminLayout({
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
-          {sidebarItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-primary-500/20 to-secondary-500/20 text-primary-400 border border-primary-500/30'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                } ${isCollapsed ? 'justify-center px-2' : ''}`}
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                {!isCollapsed && <span className="font-medium">{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+          {sidebarGroups.map((group) => (
+            <div key={group.title}>
+              {!isCollapsed ? (
+                <p className="px-4 mb-1 text-xs uppercase tracking-wide text-gray-500">{group.title}</p>
+              ) : (
+                <div className="mx-3 mb-2 border-t border-white/10" />
+              )}
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const [path, query] = item.href.split('?');
+                  const itemTab = query ? new URLSearchParams(query).get('tab') : null;
+                  const isActive =
+                    path === '/admin'
+                      ? pathname === '/admin'
+                      : (pathname === path || pathname.startsWith(path + '/')) &&
+                        (path !== '/admin/settings' || (itemTab ? currentTab === itemTab : currentTab !== 'database'));
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      title={item.label}
+                      onClick={() => {
+                        setCurrentTab(itemTab);
+                        setTimeout(() => window.dispatchEvent(new Event('admin-tab')), 0);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-primary-500/20 to-secondary-500/20 text-primary-400 border border-primary-500/30'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      } ${isCollapsed ? 'justify-center px-2' : ''}`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
+
+        <div className="px-4 pb-4 space-y-1 border-t border-white/10 pt-4">
+          {!isCollapsed && <p className="px-4 text-xs uppercase tracking-wide text-gray-500 mb-1">Sitio</p>}
+          {siteLinks.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              className={`flex items-center gap-3 px-4 py-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all ${isCollapsed ? 'justify-center px-2' : ''}`}
+            >
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && <span className="text-sm">{item.label}</span>}
+            </Link>
+          ))}
+        </div>
 
         <div className="p-4 border-t border-white/10">
           <div className={`flex items-center gap-3 ${isCollapsed ? 'justify-center' : ''}`}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-sm font-bold">
-              AD
-            </div>
+            <UserAvatar src={session?.user?.image} name={session?.user?.name || 'AD'} className="w-10 h-10 text-sm font-bold" gradient="from-red-500 to-orange-500" />
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="font-medium">Admin</p>
-                <p className="text-xs text-gray-500 truncate">admin@virtuallab.edu</p>
+                <p className="font-medium truncate">{session?.user?.name}</p>
+                <p className="text-xs text-gray-500 truncate">{role === 'SUPER_ADMIN' ? 'Super Admin' : 'Administrador'} · {session?.user?.email}</p>
               </div>
             )}
           </div>
@@ -214,6 +297,12 @@ export default function AdminLayout({
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-4 py-2 glass rounded-xl text-sm hover:bg-white/10 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Volver al sitio
+              </Link>
               <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
                 connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' :
                 connectionStatus === 'updating' ? 'bg-yellow-500/20 text-yellow-400' :
@@ -237,10 +326,6 @@ export default function AdminLayout({
                 <Activity className="w-4 h-4 text-green-400" />
                 <span className="text-sm">Sistema activo</span>
               </div>
-              <button className="relative p-2 glass rounded-lg hover:bg-white/10 transition-colors">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-              </button>
             </div>
           </div>
         </header>
@@ -259,6 +344,7 @@ export default function AdminLayout({
         </div>
       </main>
     </div>
+    </ToastProvider>
   );
 }
 
@@ -295,7 +381,7 @@ function AdminDashboard({ stats, topExperiments, recentActivity, maxCompletions,
                 <stat.icon className="w-6 h-6" />
               </div>
               <span className="text-green-400 text-sm font-medium flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" /> {stat.change}
+                {stat.change && <><TrendingUp className="w-4 h-4" /> {stat.change}</>}
               </span>
             </div>
             <p className="text-3xl font-bold mb-1">{stat.value}</p>

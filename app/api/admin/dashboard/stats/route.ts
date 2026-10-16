@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error;
   try {
     const systemStats = await prisma.systemStats.findFirst();
     

@@ -54,3 +54,4 @@ backend/venv/
 
 .vercel
 .env*.local
+.env.production

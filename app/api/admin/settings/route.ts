@@ -1,6 +1,6 @@
+import { isAdminRole, isSuperAdminRole } from '@/lib/admin';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/session';
 
 const defaultSettings = {
   siteName: 'Virtual Lab University',
@@ -23,9 +23,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || !isAdminRole((session.user as any)?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -38,9 +38,9 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || !isAdminRole((session.user as any)?.role)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/lib/admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { error } = await requireAdmin();
+    if (error) return error;
 
     const [
       totalUsers,
@@ -35,7 +31,7 @@ export async function GET() {
       totalUsers,
       activeUsers,
       suspendedUsers: totalUsers - activeUsers,
-      bannedUsers: 0,
+      bannedUsers: await prisma.user.count({ where: { status: 'BANNED' } }),
       totalExperiments,
       experimentsCompleted,
       totalHours: Math.round((totalTimeSpent._sum.timeSpent || 0) / 3600),
