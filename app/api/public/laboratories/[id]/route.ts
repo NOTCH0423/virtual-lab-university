@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
+import { staticLabDetail } from '@/lib/static-labs';
 import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,8 @@ export async function GET(
     });
 
     if (!lab) {
+      const fallback = staticLabDetail(params.id);
+      if (fallback) return NextResponse.json(fallback, { headers: { 'X-Data-Source': 'static-fallback' } });
       return NextResponse.json({ error: 'Laboratory not found' }, { status: 404 });
     }
 
@@ -91,7 +94,9 @@ export async function GET(
 
     return NextResponse.json({ ...laboratory, experiments, overallProgress, completedCount });
   } catch (error) {
-    console.error('Error fetching laboratory:', error);
+    console.error('Error fetching laboratory (usando catálogo estático):', error);
+    const fallback = staticLabDetail(params.id);
+    if (fallback) return NextResponse.json(fallback, { headers: { 'X-Data-Source': 'static-fallback' } });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
