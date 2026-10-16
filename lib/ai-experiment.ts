@@ -101,7 +101,7 @@ export function instructionsText(d: ExperimentDraft) {
   return parts.join('\n\n');
 }
 
-const MODELS = () => Array.from(new Set([process.env.GEMINI_MODEL, 'gemini-3.8-flash', 'gemini-flash-latest'].filter(Boolean) as string[]));
+const MODELS = () => Array.from(new Set([process.env.GEMINI_MODEL, 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-flash-latest'].filter(Boolean) as string[]));
 
 export async function generateWithGemini(input: {
   prompt: string; labTitle?: string; labCategory?: string; gradeLevel?: string; difficulty?: string;
@@ -128,12 +128,12 @@ export async function generateWithGemini(input: {
     contents.push({ role: 'user', parts: [{ text: `Ajusta el experimento anterior según esta indicación y devuelve el experimento completo: ${input.refine}` }] });
   }
   let lastErr = 'No se pudo generar';
-  const deadline = Date.now() + 55000;
+  const deadline = Date.now() + Number(process.env.GEMINI_DEADLINE_MS || 110000);
   for (const model of MODELS()) {
     const left = deadline - Date.now();
     if (left < 8000) break;
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), left);
+    const timer = setTimeout(() => ctrl.abort(), Math.min(left, 40000));
     try {
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
         method: 'POST', signal: ctrl.signal,
@@ -141,7 +141,7 @@ export async function generateWithGemini(input: {
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: system }] },
           contents,
-          generationConfig: { responseMimeType: 'application/json', responseSchema: GEMINI_SCHEMA, temperature: 0.7, maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: 'low' } },
+          generationConfig: { responseMimeType: 'application/json', responseSchema: GEMINI_SCHEMA, temperature: 0.7, maxOutputTokens: 8192, thinkingConfig: { thinkingLevel: process.env.GEMINI_THINKING || 'low' } },
         }),
       });
       if (res.status === 404) { lastErr = `Modelo ${model} no disponible`; continue; }

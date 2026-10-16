@@ -4,7 +4,7 @@ import { requireStaffUser } from '@/lib/staff';
 import { generateWithGemini, validateDraft } from '@/lib/ai-experiment';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const PER_HOUR = 15;
 const PER_MINUTE = 3;
