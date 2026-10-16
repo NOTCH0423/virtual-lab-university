@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useSession() { return useContext(AuthCtx); }
 
 export async function signIn(provider: string, opts: { email?: string; password?: string; redirect?: boolean; callbackUrl?: string } = {}) {
-  if (provider !== 'credentials') return { ok: false, error: 'Inicio de sesión con proveedor externo no disponible' };
+  if (provider !== 'credentials') return { ok: false, error: 'Solo se admite correo y contraseña' };
   const res = await fetch('/api/auth/token', {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email: opts.email, password: opts.password }),
