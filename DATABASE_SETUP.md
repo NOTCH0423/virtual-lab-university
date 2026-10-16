@@ -1,105 +1,33 @@
-# 🌐 Configuración de Base de Datos en la Nube
+# Configuracion de Base de Datos (Supabase + Vercel)
 
-## Opción 1: Neon (PostgreSQL) - RECOMENDADO
+## 1. Proyecto Supabase
+- Proyecto: `virtual-lab` (region us-east-1). Si esta pausado, reanudalo en el dashboard de Supabase.
+- Project Settings > Database > Connection string:
+  - **Transaction pooler (6543)** -> `DATABASE_URL` (agrega `?pgbouncer=true&connection_limit=1`)
+  - **Session pooler / Direct (5432)** -> `DIRECT_URL`
 
-### Pasos:
+## 2. Variables en Vercel (Production y Preview)
+| Variable | Valor |
+|---|---|
+| `DATABASE_URL` | URL pooler 6543 |
+| `DIRECT_URL` | URL 5432 |
+| `NEXTAUTH_URL` | `https://virtual-lab-university.vercel.app` |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+| `GITHUB_ID` / `GITHUB_SECRET` | opcional |
 
-1. **Crear cuenta en Neon**
-   - Ve a https://neon.tech
-   - Regístrate con GitHub (gratis)
-   - Crea un nuevo proyecto
+Elimina las variables antiguas de Neon (`DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `VITE_NEON_AUTH_URL`) y desconecta la integracion Neon si ya no se usa.
 
-2. **Obtener connection string**
-   - En el dashboard de Neon, ve a tu proyecto
-   - Copia la connection string desde "Connection Details"
-   - Se verá algo como:
-     ```
-     postgresql://usuario:password@ep-cool-name-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
-     ```
-
-3. **Configurar en Vercel**
-   - Ve a https://vercel.com/dashboard
-   - Selecciona tu proyecto "virtual-lab-university"
-   - Ve a Settings > Environment Variables
-   - Agrega:
-     - `DATABASE_URL` = tu connection string de Neon
-
-4. **Hacer deploy**
-   ```bash
-   npx vercel --prod
-   ```
-
-### Beneficios de Neon:
-- ✅ Tier gratuito generoso (0.5 GB RAM, 0.5 CPU)
-- ✅ Branching de base de datos (como Git)
-- ✅ Conexión serverless optimizada
-- ✅ Compatible 100% con Prisma
-
----
-
-## Opción 2: Supabase (PostgreSQL)
-
-1. Crear cuenta en https://supabase.com
-2. Crear nuevo proyecto
-3. Ir a Settings > Database
-4. Copiar "Connection string" (URI)
-5. Agregar a Vercel como variable de entorno
-
----
-
-## Opción 3: Railway (PostgreSQL)
-
-1. Crear cuenta en https://railway.app
-2. New Project > PostgreSQL
-3. Esperar a que provisioning termine
-4. Ir a Variables > copy raw value
-5. Agregar a Vercel
-
----
-
-## ⚠️ IMPORTANTE: Después de cambiar la base de datos
-
-### 1. Actualizar Schema
+## 3. Crear tablas y superadmin (desde tu PC, con `.env` apuntando a Supabase)
 ```bash
-npx prisma db push
+npx prisma migrate dev --name init   # crea prisma/migrations y aplica
+# en adelante, en produccion: npx prisma migrate deploy
+SUPER_ADMIN_EMAIL=... SUPER_ADMIN_PASSWORD=... npx prisma db seed
 ```
 
-### 2. Generar cliente
-```bash
-npx prisma generate
-```
+## 4. Deploy
+Haz push a `main` (Vercel despliega automaticamente) o `npx vercel --prod`.
 
-### 3. Hacer seed (crear datos iniciales)
-```bash
-npx prisma db seed
-```
-
-### 4. Hacer deploy
-```bash
-npx vercel --prod
-```
-
----
-
-## 🔧 Troubleshooting
-
-### Error: "Prisma has detected that this project was built on Vercel"
-Esto se resuelve automáticamente con el script `postinstall` en package.json.
-
-### Error: "Connection refused"
-- Verifica que la DATABASE_URL sea correcta
-- Asegúrate de que el usuario tenga permisos
-- Verifica el SSL mode (debe ser `require` o `prefer`)
-
-### Error: "Table does not exist"
-- Ejecuta `npx prisma db push` para crear las tablas
-- O migra con `npx prisma migrate deploy`
-
----
-
-## 📊 Verificar conexión
-
-1. Ve a Settings > Environment Variables en Vercel
-2. Confirma que DATABASE_URL está configurada
-3. Revisa los logs de deployment para errores
-4. Prueba la app en https://virtual-lab-university.vercel.app
+## Troubleshooting
+- `prepared statement already exists`: falta `?pgbouncer=true` en `DATABASE_URL`.
+- Migraciones que se cuelgan: `DIRECT_URL` debe usar el puerto 5432.
+- `Table does not exist`: ejecuta `npx prisma migrate deploy`.
