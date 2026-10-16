@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
   Activity,
   ArrowLeft,
@@ -443,17 +444,9 @@ export default function DynamicExperimentPage({ params }: { params: { slug: stri
   const metrics = useMemo(() => (config ? getMetrics(params.slug, values) : []), [config, params.slug, values]);
 
   if (!config) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-3">Experimento no encontrado</h1>
-          <Link href="/laboratories" className="text-primary-400 hover:text-primary-300">
-            Volver a laboratorios
-          </Link>
-        </div>
-      </div>
-    );
+    notFound();
   }
+
 
   const Icon = config.icon;
   const completion = getCompletion(values, config);
