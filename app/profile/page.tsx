@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { roleLabel } from '@/lib/roles';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
@@ -193,7 +194,7 @@ export default function ProfilePage() {
                 <h2 className="text-xl font-bold mt-4">{userData?.user?.name || 'Usuario'}</h2>
                 <p className="text-gray-400 text-sm">{userData?.user?.email}</p>
                 <span className="inline-block mt-2 px-3 py-1 bg-primary-500/20 text-primary-400 rounded-full text-xs font-medium">
-                  {userData?.user?.career || 'Estudiante'}
+                  {roleLabel((session?.user as any)?.role)}{userData?.user?.career ? ` · ${userData.user.career}` : ''}
                 </span>
               </div>
 

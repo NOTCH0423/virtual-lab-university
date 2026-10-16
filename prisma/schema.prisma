@@ -32,6 +32,9 @@ model User {
   certificates  Certificate[]
   academicProfile AcademicProfile?
   subjectGrades   SubjectGrade[]
+  gradesGiven     SubjectGrade[] @relation("GradeTeacher")
+  teachingCourses CourseTeacher[]
+  enrollments     CourseEnrollment[]
   
   @@map("users")
 }
@@ -209,6 +212,10 @@ model Course {
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  teachers    CourseTeacher[]
+  enrollments CourseEnrollment[]
+  grades      SubjectGrade[]
   
   @@map("courses")
 }
@@ -253,6 +260,7 @@ model AcademicProfile {
   pensum             String?
   ubicacionSemestral String?
   periodo            String?
+  horario            String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -263,6 +271,10 @@ model SubjectGrade {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  teacherId    String?
+  teacher      User?    @relation("GradeTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
   codigo       String
   descripcion  String
   creditos     Int      @default(0)
@@ -275,5 +287,32 @@ model SubjectGrade {
   updatedAt    DateTime @updatedAt
 
   @@index([userId])
+  @@index([courseId])
   @@map("subject_grades")
+}
+
+model CourseTeacher {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, teacherId])
+  @@index([teacherId])
+  @@map("course_teachers")
+}
+
+model CourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@map("course_enrollments")
 }

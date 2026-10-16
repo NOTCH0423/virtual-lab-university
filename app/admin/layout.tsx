@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Bell,
   Database,
+  ClipboardList,
   Home,
   UserCircle,
   ArrowLeft,
@@ -48,7 +49,11 @@ const sidebarGroups = [
   },
   {
     title: 'Gestión',
-    items: [{ id: 'users', label: 'Usuarios', icon: Users, href: '/admin/users' }],
+    items: [
+      { id: 'users', label: 'Usuarios', icon: Users, href: '/admin/users' },
+      { id: 'assignments', label: 'Asignaciones', icon: ClipboardList, href: '/admin/assignments' },
+      { id: 'notas', label: 'Notas', icon: Award, href: '/notas' },
+    ],
   },
   {
     title: 'Contenido',
