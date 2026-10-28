@@ -33,6 +33,12 @@ model User {
   gradesReceived Grade[]           @relation("StudentGrades")
   gradesGiven    Grade[]           @relation("TeacherGrades")
 
+  academicProfile     AcademicProfile?
+  subjectGrades       SubjectGrade[]
+  subjectGradesGiven  SubjectGrade[]       @relation("GradeTeacher")
+  teachingCourses     CourseTeacher[]
+  enrollments         CourseEnrollment[]
+
   @@map("users")
 }
 
@@ -84,6 +90,10 @@ model Experiment {
   instructions String?
   formulas     String?
   theory       String?
+  status       String     @default("PUBLISHED")
+  content      Json?
+  aiGenerated  Boolean    @default(false)
+  createdById  String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -213,6 +223,10 @@ model Course {
 
   grades Grade[]
 
+  teachers    CourseTeacher[]
+  enrollments CourseEnrollment[]
+  subjectGrades SubjectGrade[]
+
   @@map("courses")
 }
 
@@ -269,4 +283,85 @@ model Grade {
   @@index([period])
   @@index([studentId, period])
   @@map("grades")
+}
+
+/// Perfil académico (portal universitario)
+model AcademicProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identificacion     String?
+  categoria          String?
+  situacion          String?
+  programa           String?
+  jornada            String?
+  pensum             String?
+  ubicacionSemestral String?
+  periodo            String?
+  horario            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("academic_profiles")
+}
+
+/// Notas por asignatura, estilo portal universitario
+model SubjectGrade {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  teacherId    String?
+  teacher      User?    @relation("GradeTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  codigo       String
+  descripcion  String
+  creditos     Int      @default(0)
+  notaFinal    Float?
+  habilitacion Float?
+  definitiva   Float?
+  fallas       Int      @default(0)
+  periodo      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("subject_grades")
+}
+
+model CourseTeacher {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, teacherId])
+  @@index([teacherId])
+  @@map("course_teachers")
+}
+
+model CourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@map("course_enrollments")
+}
+
+model AiGenerationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String   @default("experiment")
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("ai_generation_logs")
 }
