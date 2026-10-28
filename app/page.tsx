@@ -32,31 +32,31 @@ const features = [
 
 const laboratories = [
   {
-    id: 'physics-mechanics',
+    id: 'mecanica-clasica',
     title: 'Mecánica Clásica',
     category: 'Física',
     description: 'Leyes de Newton, cinemática y dinámica de partículas',
     image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&q=80',
-    experiments: 12,
+    experiments: 4,
     difficulty: 'Intermedio',
   },
   {
-    id: 'chemistry-organic',
-    title: 'Química Orgánica',
+    id: 'quimica-general',
+    title: 'Química General',
     category: 'Química',
-    description: 'Reacciones orgánicas, grupos funcionales y síntesis',
+    description: 'Titulación ácido-base, redox, estequiometría y cinética',
     image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=800&q=80',
-    experiments: 8,
-    difficulty: 'Avanzado',
+    experiments: 4,
+    difficulty: 'Básico',
   },
   {
-    id: 'biology-cells',
+    id: 'biologia-celular',
     title: 'Biología Celular',
     category: 'Biología',
     description: 'Estructura celular, mitosis, meiosis y organelos',
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800&q=80',
-    experiments: 10,
-    difficulty: 'Básico',
+    experiments: 3,
+    difficulty: 'Intermedio',
   },
 ];
 
@@ -119,7 +119,7 @@ export default function HomePage() {
                   Comenzar Gratis <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
-                  href="/demo"
+                  href="/experiments/pendulum"
                   className="w-full sm:w-auto px-8 py-4 glass rounded-xl font-semibold text-lg text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
                 >
                   Ver Demo

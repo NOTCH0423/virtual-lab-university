@@ -1,19 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireTeacher } from '@/lib/auth-guards';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'TEACHER') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const auth = await requireTeacher();
+    if (!auth.ok) return auth.response;
 
-    const userId = (session.user as any)?.id;
+    const userId = auth.user.id;
 
     const [
       totalStudents,

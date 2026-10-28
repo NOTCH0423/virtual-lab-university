@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { staticLabDetail } from '@/lib/static-labs';
+import { getAuthUser } from '@/lib/auth-guards';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,14 +26,16 @@ export async function GET(
     });
 
     if (!lab) {
+      const fallback = staticLabDetail(params.id);
+      if (fallback) return NextResponse.json(fallback, { headers: { 'X-Data-Source': 'static-fallback' } });
       return NextResponse.json({ error: 'Laboratory not found' }, { status: 404 });
     }
 
-    const session = await getServerSession(authOptions);
+    const auth = await getAuthUser();
     let userProgress = null;
 
-    if (session?.user) {
-      const userId = (session.user as any)?.id;
+    if (auth) {
+      const userId = auth.user.id;
       userProgress = await prisma.userProgress.findUnique({
         where: {
           userId_laboratoryId: {
@@ -91,7 +93,9 @@ export async function GET(
 
     return NextResponse.json({ ...laboratory, experiments, overallProgress, completedCount });
   } catch (error) {
-    console.error('Error fetching laboratory:', error);
+    console.error('Error fetching laboratory (usando catálogo estático):', error);
+    const fallback = staticLabDetail(params.id);
+    if (fallback) return NextResponse.json(fallback, { headers: { 'X-Data-Source': 'static-fallback' } });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

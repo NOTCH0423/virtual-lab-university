@@ -24,6 +24,7 @@ import {
   GraduationCap as TeacherIcon,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { can, isRole, ROLE_LABEL, ROLES } from '@/lib/roles';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -45,7 +46,13 @@ export default function Navigation() {
   const pathname = usePathname();
   const { data: session } = useSession();
   
-  const userRole = (session?.user as any)?.role || 'STUDENT';
+  const sessionRole = session?.user?.role;
+  const userRole = isRole(sessionRole) ? sessionRole : ROLES.STUDENT;
+  const roleLinks = [
+    ...(can(userRole, 'teacher:panel') ? [{ name: 'Profesor', mobile: 'Panel Profesor', href: '/teacher', icon: TeacherIcon }] : []),
+    ...(can(userRole, 'grades:write') ? [{ name: 'Notas', mobile: 'Gestión de notas', href: '/teacher/grades', icon: BookOpen }] : []),
+    ...(can(userRole, 'admin:panel') ? [{ name: 'Admin', mobile: 'Panel Admin', href: '/admin', icon: Shield }] : []),
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
@@ -110,18 +117,19 @@ export default function Navigation() {
                 </AnimatePresence>
               </div>
 
-              {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
+              {roleLinks.map((l) => (
                 <Link
-                  href={userRole === 'ADMIN' ? '/admin' : '/teacher'}
+                  key={l.href}
+                  href={l.href}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    pathname === '/admin' || pathname === '/teacher'
+                    pathname === l.href
                       ? 'bg-purple-500/20 text-purple-400'
                       : 'text-purple-300 hover:text-purple-200 hover:bg-purple-500/10'
                   }`}
                 >
-                  {userRole === 'ADMIN' ? 'Admin' : 'Profesor'}
+                  {l.name}
                 </Link>
-              )}
+              ))}
             </div>
           </div>
 
@@ -133,7 +141,7 @@ export default function Navigation() {
               <div className="text-sm">
                 <p className="font-medium text-white">{session?.user?.name || 'Usuario'}</p>
                 <p className="text-xs text-gray-400">
-                  {userRole === 'ADMIN' ? 'Administrador' : userRole === 'TEACHER' ? 'Profesor' : 'Estudiante'}
+                  {ROLE_LABEL[userRole]}
                 </p>
               </div>
             </div>
@@ -186,16 +194,17 @@ export default function Navigation() {
                   {item.name}
                 </Link>
               ))}
-              {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
+              {roleLinks.map((l) => (
                 <Link
-                  href={userRole === 'ADMIN' ? '/admin' : '/teacher'}
+                  key={l.href}
+                  href={l.href}
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-lg text-purple-300"
                 >
-                  {userRole === 'ADMIN' ? <Shield className="w-5 h-5" /> : <TeacherIcon className="w-5 h-5" />}
-                  {userRole === 'ADMIN' ? 'Panel Admin' : 'Panel Profesor'}
+                  <l.icon className="w-5 h-5" />
+                  {l.mobile}
                 </Link>
-              )}
+              ))}
             </div>
           </motion.div>
         )}

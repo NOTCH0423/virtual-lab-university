@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { Beaker, GraduationCap, AlertCircle, Check } from 'lucide-react';
@@ -9,6 +10,48 @@ import { motion } from 'framer-motion';
 export default function RegisterPage() {
   const [isOAuthLoading, setIsOAuthLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '', university: '', career: '' });
+  const router = useRouter();
+
+  const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [k]: e.target.value });
+
+  const handleRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (form.password !== form.confirm) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          password: form.password,
+          university: form.university,
+          career: form.career,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'No se pudo crear la cuenta');
+      // Inicia sesión con NextAuth (credentials) inmediatamente después del registro
+      const login = await signIn('credentials', { email: form.email, password: form.password, redirect: false });
+      if (login?.error) {
+        router.push('/login');
+        return;
+      }
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     setIsOAuthLoading(provider);
@@ -91,9 +134,9 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Registro</h1>
+            <h1 className="text-3xl font-bold mb-2">Crear cuenta de estudiante</h1>
             <p className="text-gray-400">
-              El registro está disponible solo para administradores y profesores
+              Las cuentas de profesor y administrador las crea un administrador desde el panel.
             </p>
           </div>
 
@@ -108,22 +151,28 @@ export default function RegisterPage() {
             </motion.div>
           )}
 
-          <div className="mb-6 p-4 rounded-xl bg-primary-500/10 border border-primary-500/20">
-            <div className="flex items-center gap-3">
-              <GraduationCap className="w-6 h-6 text-primary-400" />
-              <div>
-                <p className="text-sm text-primary-400 font-medium">Registro por Invitación</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Si eres estudiante, pide a tu profesor o administrador que cree tu cuenta
-                </p>
-              </div>
+          <form onSubmit={handleRegister} className="space-y-4 mb-6">
+            <div className="grid grid-cols-2 gap-3">
+              <input required placeholder="Nombre" value={form.firstName} onChange={update('firstName')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
+              <input required placeholder="Apellido" value={form.lastName} onChange={update('lastName')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
             </div>
-          </div>
-
-          <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <p className="text-sm text-blue-400 text-center">
-              Si eres profesor o administrador, inicia sesión y crea cuentas desde el panel
+            <input required type="email" placeholder="Correo electrónico" value={form.email} onChange={update('email')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="Universidad (opcional)" value={form.university} onChange={update('university')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
+              <input placeholder="Carrera (opcional)" value={form.career} onChange={update('career')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
+            </div>
+            <input required type="password" placeholder="Contraseña" value={form.password} onChange={update('password')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
+            <input required type="password" placeholder="Confirmar contraseña" value={form.confirm} onChange={update('confirm')} className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-primary-500 focus:outline-none" />
+            <p className="text-xs text-gray-500 flex items-start gap-2">
+              <GraduationCap className="w-4 h-4 shrink-0" /> Mínimo 12 caracteres con mayúscula, minúscula, número y símbolo.
             </p>
+            <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 font-semibold disabled:opacity-50">
+              {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+            </button>
+          </form>
+
+          <div className="flex items-center gap-3 mb-6 text-xs text-gray-500">
+            <div className="flex-1 h-px bg-white/10" /> o <div className="flex-1 h-px bg-white/10" />
           </div>
 
           <button

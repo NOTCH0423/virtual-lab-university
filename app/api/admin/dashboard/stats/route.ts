@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth-guards';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
+
     const systemStats = await prisma.systemStats.findFirst();
     
     // Get laboratories with experiment counts
@@ -104,8 +108,8 @@ export async function GET() {
       })),
       recentActivity: recentSessions.map((session) => ({
         id: session.id,
-        user: session.user.name,
-        email: session.user.email,
+        user: auth.user.name,
+        email: auth.user.email,
         action: 'logged_in',
         time: session.createdAt,
       })),
