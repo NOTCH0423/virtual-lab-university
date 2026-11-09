@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
+import { staticLabList, normalizeCategory } from '@/lib/static-labs';
 import {
   Search,
   Filter,
@@ -59,12 +60,15 @@ export default function LaboratoriesPage() {
   const fetchLaboratories = async () => {
     try {
       const res = await fetch('/api/public/laboratories');
-      if (res.ok) {
-        const labsData = await res.json();
-        setLaboratories(labsData);
+      const labsData = res.ok ? await res.json() : null;
+      if (Array.isArray(labsData) && labsData.length > 0) {
+        setLaboratories(labsData.map((l: Laboratory) => ({ ...l, category: normalizeCategory(l.category) })));
+      } else {
+        setLaboratories(staticLabList());
       }
     } catch (error) {
       console.error('Error fetching laboratories:', error);
+      setLaboratories(staticLabList());
     } finally {
       setLoading(false);
     }

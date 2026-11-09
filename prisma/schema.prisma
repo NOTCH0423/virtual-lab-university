@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -23,129 +24,142 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastActiveAt  DateTime?
-  status        String   @default("ACTIVE")
-  
-  progress      UserProgress[]
-  achievements  UserAchievement[]
-  sessions      Session[]
-  certificates  Certificate[]
-  
+  status        String    @default("ACTIVE")
+
+  progress       UserProgress[]
+  achievements   UserAchievement[]
+  sessions       Session[]
+  certificates   Certificate[]
+  gradesReceived Grade[]           @relation("StudentGrades")
+  gradesGiven    Grade[]           @relation("TeacherGrades")
+
+  academicProfile     AcademicProfile?
+  subjectGrades       SubjectGrade[]
+  subjectGradesGiven  SubjectGrade[]       @relation("GradeTeacher")
+  teachingCourses     CourseTeacher[]
+  enrollments         CourseEnrollment[]
+
   @@map("users")
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String   @unique
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
   @@map("sessions")
 }
 
 model Laboratory {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  description String
-  category    String
-  image       String?
-  difficulty  String   @default("BASIC")
-  status      String   @default("DRAFT")
-  instructor  String?
+  id           String   @id @default(cuid())
+  title        String
+  slug         String   @unique
+  description  String
+  category     String
+  image        String?
+  difficulty   String   @default("BASIC")
+  status       String   @default("DRAFT")
+  instructor   String?
   requirements String?
-  duration    Int?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  duration     Int?
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   experiments Experiment[]
   progress    UserProgress[]
-  
+
   @@map("laboratories")
 }
 
 model Experiment {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   laboratoryId String
   laboratory   Laboratory @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
   title        String
-  slug        String
-  description String
-  category    String
-  image       String?
-  difficulty  String   @default("BASIC")
-  duration    Int?
-  order       Int      @default(0)
+  slug         String
+  description  String
+  category     String
+  image        String?
+  difficulty   String     @default("BASIC")
+  duration     Int?
+  order        Int        @default(0)
   instructions String?
   formulas     String?
   theory       String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  progress     ExperimentProgress[]
-  results      ExperimentResult[]
-  
+  status       String     @default("PUBLISHED")
+  content      Json?
+  aiGenerated  Boolean    @default(false)
+  createdById  String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  progress ExperimentProgress[]
+  results  ExperimentResult[]
+  grades   Grade[]
+
   @@unique([laboratoryId, slug])
   @@map("experiments")
 }
 
 model UserProgress {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   laboratoryId String
   laboratory   Laboratory @relation(fields: [laboratoryId], references: [id], onDelete: Cascade)
-  
-  completed    Boolean   @default(false)
-  progress     Int       @default(0)
-  score        Int?
-  timeSpent    Int       @default(0)
-  attempts     Int       @default(0)
-  startedAt    DateTime  @default(now())
-  completedAt  DateTime?
-  
+
+  completed   Boolean   @default(false)
+  progress    Int       @default(0)
+  score       Int?
+  timeSpent   Int       @default(0)
+  attempts    Int       @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
   experimentProgress ExperimentProgress[]
-  
+
   @@unique([userId, laboratoryId])
   @@map("user_progress")
 }
 
 model ExperimentProgress {
-  id           String    @id @default(cuid())
+  id             String       @id @default(cuid())
   userProgressId String
   userProgress   UserProgress @relation(fields: [userProgressId], references: [id], onDelete: Cascade)
   experimentId   String
-  experiment     Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
-  
-  completed    Boolean   @default(false)
-  score        Int?
-  timeSpent    Int       @default(0)
-  attempts     Int       @default(0)
-  data         String?
-  startedAt    DateTime  @default(now())
-  completedAt  DateTime?
-  
-  results      ExperimentResult[]
-  
+  experiment     Experiment   @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  completed   Boolean   @default(false)
+  score       Int?
+  timeSpent   Int       @default(0)
+  attempts    Int       @default(0)
+  data        String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  results ExperimentResult[]
+
   @@unique([userProgressId, experimentId])
   @@map("experiment_progress")
 }
 
 model ExperimentResult {
-  id           String   @id @default(cuid())
+  id                   String             @id @default(cuid())
   experimentProgressId String
   experimentProgress   ExperimentProgress @relation(fields: [experimentProgressId], references: [id], onDelete: Cascade)
-  experimentId String
-  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
-  
-  score        Int
-  data         String
-  parameters   String?
-  accuracy     Float?
-  createdAt    DateTime @default(now())
-  
+  experimentId         String
+  experiment           Experiment         @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  score      Int
+  data       String
+  parameters String?
+  accuracy   Float?
+  createdAt  DateTime @default(now())
+
   @@map("experiment_results")
 }
 
@@ -160,21 +174,21 @@ model Achievement {
   requirement String?
   points      Int      @default(0)
   createdAt   DateTime @default(now())
-  
-  users       UserAchievement[]
-  
+
+  users UserAchievement[]
+
   @@map("achievements")
 }
 
 model UserAchievement {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievementId String
   achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  
-  earnedAt      DateTime @default(now())
-  
+
+  earnedAt DateTime @default(now())
+
   @@unique([userId, achievementId])
   @@map("user_achievements")
 }
@@ -188,7 +202,7 @@ model Certificate {
   description  String?
   score        Int
   issuedAt     DateTime @default(now())
-  
+
   @@map("certificates")
 }
 
@@ -206,33 +220,148 @@ model Course {
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
+  grades Grade[]
+
+  teachers    CourseTeacher[]
+  enrollments CourseEnrollment[]
+  subjectGrades SubjectGrade[]
+
   @@map("courses")
 }
 
 model DailyStats {
-  id           String   @id @default(cuid())
-  date         DateTime @unique
-  activeUsers  Int      @default(0)
-  newUsers     Int      @default(0)
-  experimentsCompleted Int @default(0)
-  totalHours   Float    @default(0)
-  certificatesIssued Int @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  id                   String   @id @default(cuid())
+  date                 DateTime @unique
+  activeUsers          Int      @default(0)
+  newUsers             Int      @default(0)
+  experimentsCompleted Int      @default(0)
+  totalHours           Float    @default(0)
+  certificatesIssued   Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
   @@map("daily_stats")
 }
 
 model SystemStats {
-  id            String   @id @default(cuid())
-  totalUsers    Int      @default(0)
-  activeUsers   Int      @default(0)
-  totalExperiments Int   @default(0)
-  experimentsCompleted Int @default(0)
-  totalHours    Float    @default(0)
-  certificates  Int      @default(0)
-  updatedAt     DateTime @updatedAt
-  
+  id                   String   @id @default(cuid())
+  totalUsers           Int      @default(0)
+  activeUsers          Int      @default(0)
+  totalExperiments     Int      @default(0)
+  experimentsCompleted Int      @default(0)
+  totalHours           Float    @default(0)
+  certificates         Int      @default(0)
+  updatedAt            DateTime @updatedAt
+
   @@map("system_stats")
+}
+
+/// Notas en escala colombiana (0 a 5 por defecto)
+model Grade {
+  id           String      @id @default(cuid())
+  studentId    String
+  student      User        @relation("StudentGrades", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      User        @relation("TeacherGrades", fields: [teacherId], references: [id], onDelete: Restrict)
+  courseId     String?
+  course       Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  experimentId String?
+  experiment   Experiment? @relation(fields: [experimentId], references: [id], onDelete: SetNull)
+  subject      String?
+  title        String
+  score        Float
+  maxScore     Float       @default(5)
+  comment      String?
+  period       String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([courseId])
+  @@index([period])
+  @@index([studentId, period])
+  @@map("grades")
+}
+
+/// Perfil académico (portal universitario)
+model AcademicProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  identificacion     String?
+  categoria          String?
+  situacion          String?
+  programa           String?
+  jornada            String?
+  pensum             String?
+  ubicacionSemestral String?
+  periodo            String?
+  horario            String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("academic_profiles")
+}
+
+/// Notas por asignatura, estilo portal universitario
+model SubjectGrade {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     String?
+  course       Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  teacherId    String?
+  teacher      User?    @relation("GradeTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  codigo       String
+  descripcion  String
+  creditos     Int      @default(0)
+  notaFinal    Float?
+  habilitacion Float?
+  definitiva   Float?
+  fallas       Int      @default(0)
+  periodo      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@map("subject_grades")
+}
+
+model CourseTeacher {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, teacherId])
+  @@index([teacherId])
+  @@map("course_teachers")
+}
+
+model CourseEnrollment {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@map("course_enrollments")
+}
+
+model AiGenerationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String   @default("experiment")
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("ai_generation_logs")
 }

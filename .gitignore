@@ -54,3 +54,7 @@ backend/venv/
 
 .vercel
 .env*.local
+.env*
+
+.superadmin.local
+.superadmin.pass.tmp

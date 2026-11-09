@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
+import { staticLabList, normalizeCategory } from '@/lib/static-labs';
 import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export async function GET() {
       id: lab.slug,
       title: lab.title,
       description: lab.description,
-      category: lab.category.toLowerCase(),
+      category: normalizeCategory(lab.category),
       image: lab.image || 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80',
       experiments: lab._count.experiments,
       students: lab._count.progress,
@@ -36,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json(laboratories);
   } catch (error) {
-    console.error('Error fetching laboratories:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching laboratories (usando catálogo estático):', error);
+    return NextResponse.json(staticLabList(), { headers: { 'X-Data-Source': 'static-fallback' } });
   }
 }

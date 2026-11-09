@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import ExperimentPage from '@/components/lab/ExperimentPage';
+import { getSim } from '@/lib/lab-sims';
 import {
   Activity,
   ArrowLeft,
@@ -435,7 +438,7 @@ function ExperimentVisual({ slug, values, color }: { slug: string; values: Recor
   );
 }
 
-export default function DynamicExperimentPage({ params }: { params: { slug: string } }) {
+function LegacyExperimentPage({ params }: { params: { slug: string } }) {
   const config = experiments[params.slug];
   const [values, setValues] = useState<Record<string, number>>(() => (config ? getInitialValues(config) : {}));
   const [saved, setSaved] = useState(false);
@@ -443,17 +446,9 @@ export default function DynamicExperimentPage({ params }: { params: { slug: stri
   const metrics = useMemo(() => (config ? getMetrics(params.slug, values) : []), [config, params.slug, values]);
 
   if (!config) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-3">Experimento no encontrado</h1>
-          <Link href="/laboratories" className="text-primary-400 hover:text-primary-300">
-            Volver a laboratorios
-          </Link>
-        </div>
-      </div>
-    );
+    notFound();
   }
+
 
   const Icon = config.icon;
   const completion = getCompletion(values, config);
@@ -622,4 +617,9 @@ export default function DynamicExperimentPage({ params }: { params: { slug: stri
       </aside>
     </div>
   );
+}
+
+export default function DynamicExperimentPage({ params }: { params: { slug: string } }) {
+  if (getSim(params.slug)) return <ExperimentPage slug={params.slug} />;
+  return <LegacyExperimentPage params={params} />;
 }

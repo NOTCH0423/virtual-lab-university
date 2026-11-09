@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth-guards';
+import { isSuperAdmin } from '@/lib/roles';
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const body = await request.json();
     const { action } = body;
@@ -43,6 +40,9 @@ export async function POST(request: Request) {
     }
 
     if (action === 'reset') {
+      if (!isSuperAdmin(auth.user.role)) {
+        return NextResponse.json({ error: 'Solo SUPER_ADMIN puede reiniciar la BD' }, { status: 403 });
+      }
       await prisma.experimentResult.deleteMany();
       await prisma.experimentProgress.deleteMany();
       await prisma.userProgress.deleteMany();

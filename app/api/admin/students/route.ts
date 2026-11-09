@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-guards';
+import { hashPassword, validatePasswordStrength } from '@/lib/password';
+import { ROLES } from '@/lib/roles';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const students = await prisma.user.findMany({
-      where: { role: 'STUDENT' },
+      where: { role: ROLES.STUDENT },
       select: {
         id: true,
         email: true,
@@ -45,14 +44,16 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return auth.response;
 
     const body = await request.json();
-    const { email, password, firstName, lastName, university, career } = body;
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+    const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
+    const university = typeof body.university === 'string' ? body.university.trim() || null : null;
+    const career = typeof body.career === 'string' ? body.career.trim() || null : null;
 
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
@@ -61,18 +62,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { message: 'La contraseña debe tener al menos 6 caracteres' },
-        { status: 400 }
-      );
+    if (!EMAIL_RE.test(email)) {
+      return NextResponse.json({ message: 'Email inválido' }, { status: 400 });
     }
 
-    if (!email.includes('@')) {
-      return NextResponse.json(
-        { message: 'Email inválido' },
-        { status: 400 }
-      );
+    const strength = validatePasswordStrength(password);
+    if (!strength.valid) {
+      return NextResponse.json({ message: strength.message }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -86,7 +82,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password);
 
     const student = await prisma.user.create({
       data: {
@@ -95,23 +91,26 @@ export async function POST(request: Request) {
         name: `${firstName} ${lastName}`,
         firstName,
         lastName,
-        university: university || null,
-        career: career || null,
-        role: 'STUDENT',
+        university,
+        career,
+        role: ROLES.STUDENT,
         status: 'ACTIVE',
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Estudiante creado exitosamente',
-      student: {
-        id: student.id,
-        email: student.email,
-        name: student.name,
-        role: student.role,
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Estudiante creado exitosamente',
+        student: {
+          id: student.id,
+          email: student.email,
+          name: student.name,
+          role: student.role,
+        },
       },
-    }, { status: 201 });
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating student:', error);
     return NextResponse.json(
