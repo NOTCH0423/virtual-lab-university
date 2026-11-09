@@ -65,27 +65,25 @@ export default function LaboratoryDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (params.id) {
-      fetchLabData();
-    }
-  }, [params.id]);
-
-  const fetchLabData = async () => {
-    try {
-      const res = await fetch(`/api/public/laboratories/${params.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setLabData(data);
-      } else {
+    if (!params.id) return;
+    const fetchLabData = async () => {
+      try {
+        const res = await fetch(`/api/public/laboratories/${params.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLabData(data);
+        } else {
+          setLabData(staticLabDetail(String(params.id)));
+        }
+      } catch (error) {
+        console.error('Error fetching laboratory:', error);
         setLabData(staticLabDetail(String(params.id)));
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching laboratory:', error);
-      setLabData(staticLabDetail(String(params.id)));
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    fetchLabData();
+  }, [params.id]);
 
   if (loading) {
     return (

@@ -91,5 +91,8 @@ export function canManageUser(actorRole: string | null | undefined, targetRole: 
 export const isSuperAdmin = (role?: string | null) => role === ROLES.SUPER_ADMIN;
 export const isAdminRole = (role?: string | null) => hasRole(role, ROLES.ADMIN);
 export const isTeacherOrAbove = (role?: string | null) => hasRole(role, ROLES.TEACHER);
+export const ROLE_LABELS = ROLE_LABEL;
+export const roleLabel = (role?: string | null) =>
+  isRole(role) ? ROLE_LABEL[role] : (ROLE_LABEL as any)[String(role).toUpperCase()] || String(role || 'Estudiante');
 /** @deprecated usar canAssignRole */
 export const canManageRole = canAssignRole;

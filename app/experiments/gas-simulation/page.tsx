@@ -13,6 +13,8 @@ interface Particle {
   color: string;
 }
 
+const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316'];
+
 export default function GasSimulationPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
@@ -26,8 +28,6 @@ export default function GasSimulationPage() {
   const [stats, setStats] = useState({ avgSpeed: 0, collisions: 0, kineticEnergy: 0 });
   
   const containerRef = useRef<{ width: number; height: number }>({ width: 600, height: 400 });
-  
-  const colors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899', '#06b6d4', '#f97316'];
   
   const initParticles = useCallback((count: number) => {
     const particles: Particle[] = [];
@@ -44,12 +44,12 @@ export default function GasSimulationPage() {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         radius: 4 + Math.random() * 4,
-        color: colors[i % colors.length]
+        color: COLORS[i % COLORS.length]
       });
     }
     particlesRef.current = particles;
     return particles;
-  }, []);
+  }, [temperature]);
   
   const updatePhysics = useCallback(() => {
     const particles = particlesRef.current;
